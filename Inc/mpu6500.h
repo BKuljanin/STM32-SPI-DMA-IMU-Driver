@@ -12,20 +12,6 @@
 
 #include <stdint.h>
 
-/*ADXL345 registers
- *
- * #define DEVID_R (0x00)
- * #define DEVICE_ADDR (0x53)
- * #define DATA_FORMAT_R (0x31)
- * #define POWER_CTL_R (0x2D)
- * #define DATA_START_ADDR (0x32)
- * #define DATA_FORMAT_R (0x31)
- *
- * #define FOUR_G (0x01)
- * #define RESET (0x00)
- * #define SET_MEASURE_B (0x08)
- *
- * */
 
 // The document MPU6500 will be refered
 #define DEVID_R (0x75) //device ID register WHO_AM_I (name)

@@ -14,10 +14,10 @@
 void adxl_read(uint8_t address, uint8_t *rxdata)
 {
 	// Set read operation
-	address |= READ_OPERATION; // applies both for mpu and adxl
+	address |= READ_OPERATION;
 
 	// Enable multibyte
-	//address |= MULTI_BYTE_EN;// Uncomment for adxl
+	//address |= MULTI_BYTE_EN;
 	// Now final address has values of read operation and multi byte operation, only for adxl
 
 	// Pull cs line low to enable slave
@@ -33,31 +33,7 @@ void adxl_read(uint8_t address, uint8_t *rxdata)
 	cs_disable();
 
 }
-/* ADXL
-void adxl_write (uint8_t address, char value)
-{
-	uint8_t data[2];
 
-	// Enable multibyte, place address into buffer
-	data[0] = address | MULTI_BYTE_EN; // address will be passed as an argument, then we perform OR with multibyte en. and place that to index 0
-	// NOTE:
-	// ADXL346: Bit 6 (0x40) in the SPI command enables multi-byte transfer (auto-increment of register address).
-	// MPU6500: No multi-byte bit required — keeping CS low automatically allows consecutive register reads.
-
-	// Place data into buffer
-	data[1] = value;
-
-	// Pull cs line low to enable slave
-	cs_enable();
-
-	// Transmit data and address
-	spi1_transmit(data,2);
-
-	// Pull cs line high to disable slave
-	cs_disable();
-
-}
-*/
 
 // MPU6500
 void adxl_write (uint8_t address, char value)
