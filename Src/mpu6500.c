@@ -1,24 +1,11 @@
-/*
- * mpu6500.c
- *
- *  Created on: Jan 26, 2026
- *      Author: Bogdan Kuljanin
- */
-
-
 #include "mpu6500.h"
 
-#define MULTI_BYTE_EN 0x40 // for adxl
-#define READ_OPERATION 0x80 // for adxl
+
 
 void adxl_read(uint8_t address, uint8_t *rxdata)
 {
 	// Set read operation
 	address |= READ_OPERATION;
-
-	// Enable multibyte
-	//address |= MULTI_BYTE_EN;
-	// Now final address has values of read operation and multi byte operation, only for adxl
 
 	// Pull cs line low to enable slave
 	cs_enable();
@@ -35,7 +22,6 @@ void adxl_read(uint8_t address, uint8_t *rxdata)
 }
 
 
-// MPU6500
 void adxl_write (uint8_t address, char value)
 {
 	uint8_t data[2];

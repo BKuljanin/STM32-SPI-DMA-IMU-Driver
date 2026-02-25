@@ -24,7 +24,7 @@
 #define RESET (0x00)
 #define SET_MEASURE_B (0x00) // wriging in power control // test, the original value is 0x00
 
-
+#define READ_OPERATION 0x80
 
 void adxl_init(void);
 void adxl_read(uint8_t address, uint8_t *rxdata);
