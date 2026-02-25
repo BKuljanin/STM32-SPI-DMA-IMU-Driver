@@ -12,6 +12,29 @@
 
 #include <stdint.h>
 
+// Defining structures
+typedef struct
+{
+    float a_x;
+    float a_y;
+    float a_z;
+
+    float omega_x;
+    float omega_y;
+    float omega_z;
+
+    float temp;
+
+} MPU6500_Data_t;
+
+typedef struct
+{
+    int16_t omega_x_bias;
+    int16_t omega_y_bias;
+    int16_t omega_z_bias;
+
+} MPU6500_Gyro_bias;
+
 
 // The document MPU6500 will be refered
 #define DEVID_R (0x75) //device ID register WHO_AM_I (name)
@@ -26,8 +49,9 @@
 
 #define READ_OPERATION 0x80
 
-void adxl_init(void);
-void adxl_read(uint8_t address, uint8_t *rxdata);
-//void adxl_write (uint8_t address, char value);
+void mpu6500_init(void);
+void mpu6500_read(uint8_t address, uint8_t *rxdata);
+void mpu6500_calibrate_gyro(uint16_t gyro_samples, MPU6500_Gyro_bias *gyro_bias);
+
 
 #endif /* MPU6500_H_ */
