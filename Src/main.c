@@ -12,11 +12,12 @@ volatile uint32_t systick_ms; // Elapsed time in ms
 uint32_t last_imu_call = 0;
 
 uint8_t data_rec[6];
+uint8_t debug;
 
 
 int main(void)
 {
-
+	SysTick_Init();
 	adxl_init();
 
 		while(1)
@@ -25,6 +26,7 @@ int main(void)
 
 			if ((systick_ms - last_imu_call) >= 1) // Schedules IMU reading every 1ms
 					    {
+				debug = 1;
 							last_imu_call = systick_ms;
 
 							adxl_read(DATA_START_ADDR, data_rec); // Read and store in data_rec
