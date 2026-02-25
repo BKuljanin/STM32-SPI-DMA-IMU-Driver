@@ -20,7 +20,7 @@ uint8_t data_rec[6]; //prveor extern sta je ovo je isto def u mpu6500.c
 
 int main(void)
 {
-//	Clock_Init_16MHz(); // delete test line
+
 	adxl_init();
 
 		while(1)
