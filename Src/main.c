@@ -14,7 +14,7 @@ float xg,yg,zg;
 
 //void Clock_Init_16MHz(void);//test line
 
-uint8_t data_rec[6]; //prveor extern sta je ovo je isto def u mpu6500.c
+uint8_t data_rec[6];
 //extern char data;// TEST LINE DELETE
 
 
