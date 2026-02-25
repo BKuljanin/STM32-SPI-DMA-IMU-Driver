@@ -29,13 +29,10 @@ int main(void)
 
 			{
 
-			if ((systick_ms - last_imu_call) >= 1) // Schedules IMU reading every 1ms
+			if ((systick_ms - last_imu_call) >= 1) // Schedules IMU reading every 1ms (1kHz)
 					    {
-
 							last_imu_call = systick_ms;
-
 							mpu6500_sample(DATA_START_ADDR, &gyro_bias, &imu_data); // Read and store in data_rec
-
 					    }
 			}
 }

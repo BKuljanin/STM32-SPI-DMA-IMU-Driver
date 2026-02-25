@@ -72,31 +72,31 @@ void mpu6500_sample(uint8_t address, MPU6500_Gyro_bias *gyro_bias, MPU6500_Data_
 	 mpu6500_read(address, data_rec);
 
 	 // Reading x component of the acceleration
-	 accel_data = ((int16_t)data_rec[0]<<8) + data_rec[1]; // Shifting data bytes to get data (data stored in 2 bytes for each component)
+	 accel_data = ((int16_t)data_rec[0]<<8) | data_rec[1]; // Shifting data bytes to get data (data stored in 2 bytes for each component)
 	 imu_data->a_x = accel_data * 0.000122070;
 
 	 // Reading y component of the acceleration
-	 accel_data = ((int16_t)data_rec[2]<<8) + data_rec[3];
+	 accel_data = ((int16_t)data_rec[2]<<8) | data_rec[3];
 	 imu_data->a_y = accel_data * 0.000122070;
 
 	 // Reading z component of the acceleration
-	 accel_data = ((int16_t)data_rec[4]<<8) + data_rec[5];
+	 accel_data = ((int16_t)data_rec[4]<<8) | data_rec[5];
 	 imu_data->a_z = accel_data * 0.000122070;
 
 	 // Reading temperature
-	 temp_data = ((int16_t)data_rec[6]<<8) + data_rec[7];
+	 temp_data = ((int16_t)data_rec[6]<<8) | data_rec[7];
 	 imu_data->temp = (temp_data / 333.87) + 21.0;
 
 	 // Reading x component of the angular velocity
-	 gyro_data = ((int16_t)data_rec[8]<<8) + data_rec[9];
+	 gyro_data = ((int16_t)data_rec[8]<<8) | data_rec[9];
 	 imu_data->omega_x = (gyro_data - gyro_bias->omega_x_bias) / 65.6;
 
 	 // Reading y component of the angular velocity
-	 gyro_data = ((int16_t)data_rec[10]<<8) + data_rec[11];
+	 gyro_data = ((int16_t)data_rec[10]<<8) | data_rec[11];
 	 imu_data->omega_y = (gyro_data - gyro_bias->omega_y_bias) / 65.6;
 
 	 // Reading z component of the angular velocity
-	 gyro_data = ((int16_t)data_rec[12]<<8) + data_rec[13];
+	 gyro_data = ((int16_t)data_rec[12]<<8) | data_rec[13];
 	 imu_data->omega_z = (gyro_data - gyro_bias->omega_z_bias) / 65.6;
 
 }
@@ -112,16 +112,15 @@ void mpu6500_calibrate_gyro(uint16_t gyro_samples, MPU6500_Gyro_bias *gyro_bias)
 
 		mpu6500_read(DATA_START_ADDR,  imu_data); // Reading data to array
 
-		for(int i = 0; i < 100; i++){} // Short delay after reading
+		for (volatile int d = 0; d < 1000; d++) {} // Short delay after reading
 
-		// Reading x component of the angular velocity
-		sum_x += (imu_data[8]<<8) + imu_data[9];	// Calculating sum in each iteration
+		int16_t gx = (int16_t)((imu_data[8]  << 8) | imu_data[9]);  // Reading x component of the angular velocity
+		int16_t gy = (int16_t)((imu_data[10] << 8) | imu_data[11]); // Reading y component of the angular velocity
+		int16_t gz = (int16_t)((imu_data[12] << 8) | imu_data[13]); // Reading z component of the angular velocity
 
-		// Reading y component of the angular velocity
-		sum_y += (imu_data[10]<<8) + imu_data[11];
-
-		// Reading z component of the angular velocity
-		sum_z += (imu_data[12]<<8) + imu_data[13];
+		sum_x += gx;	// Calculating sum in each iteration
+		sum_y += gy;
+		sum_z += gz;
 
     }
 
