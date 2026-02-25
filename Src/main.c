@@ -34,14 +34,8 @@ int main(void)
 
 							last_imu_call = systick_ms;
 
-							mpu6500_read(DATA_START_ADDR, data_rec); // Read and store in data_rec
-							x = ((data_rec[0]<<8) | data_rec[1]); // shiting to obtain x
-							y = ((data_rec[2]<<8) | data_rec[3]); // multiplied to get unit in g
-							z = ((data_rec[4]<<8) | data_rec[5]); // high byte first
+							mpu6500_sample(DATA_START_ADDR, &gyro_bias, &imu_data); // Read and store in data_rec
 
-							xg = x * 0.000122070;
-							yg = y * 0.000122070;
-							zg = z * 0.000122070;
 					    }
 			}
 }
