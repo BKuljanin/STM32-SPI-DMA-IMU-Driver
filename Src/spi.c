@@ -82,6 +82,10 @@ void spi1_config(void)
 
 	// Enable the SPI module
 	SPI1->CR1 |= (1U<<6); // Reference manual p867
+
+	GPIOA->ODR |= (1U<<9); // CS high idle to ensure correct start
+	// NOTE: Without this line the code didn't work. Writing in initialization wasn't  working because the CS line was initially set low.
+	// It must be low only during the SPI transmit/receive
 }
 
 void spi1_transmit(uint8_t *data, uint32_t size)

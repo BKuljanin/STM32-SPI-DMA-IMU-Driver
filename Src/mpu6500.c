@@ -22,24 +22,22 @@ void adxl_read(uint8_t address, uint8_t *rxdata)
 }
 
 
-void adxl_write (uint8_t address, char value)
+void adxl_write (uint8_t address, uint32_t value)
 {
 	uint8_t data;
 
 	// Enable multibyte, place address into buffer
-	data = address & 0x7F; // address will be passed as an argument, then we perform OR with multibyte en. and place that to index 0
-
-	// Place data into buffer
-	data = value;
+	 uint8_t reg = address & 0x7F; // address will be passed as an argument, then we perform OR with multibyte en. and place that to index 0
+	 uint8_t val = value;
 
 	// Pull cs line low to enable slave
 	cs_enable();
 
 	// Transmit address
-	spi1_transmit(address,1);
+	spi1_transmit(&reg, 1);
 
 	// Transmit data
-	spi1_transmit(value,1);
+	spi1_transmit(&val, 1);
 
 	// Pull cs line high to disable slave
 	cs_disable();
