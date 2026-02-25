@@ -22,7 +22,7 @@ void mpu6500_read(uint8_t address, uint8_t *rxdata)
 }
 
 
-void mpu6500_write (uint8_t address, uint32_t value)
+void mpu6500_write (uint8_t address, uint8_t value)
 {
 
 	 uint8_t reg = address & 0x7F; // 0 on MSB for writing, for MPU6500
@@ -51,14 +51,15 @@ void mpu6500_init(void)
 	// SPI config
 	spi1_config();
 
-	// set data format range +-4g
-	mpu6500_write(DATA_FORMAT_R, FOUR_G);
-
-	// reset all bits
+	// Wake up sensor
 	mpu6500_write(POWER_CTL_R, RESET);
 
-	// configure power control measure bit
-	mpu6500_write(POWER_CTL_R, SET_MEASURE_B);
+	// Set data format of accelerometer to range +-4g
+	mpu6500_write(ACC_DATA_FORMAT_R, ACC_FOUR_G);
+
+	// Set data format of gyroscope to range +/-500dps
+	mpu6500_write(GYRO_DATA_FORMAT_R, GYRO_500_DPS);
+
 }
 
 // Reads and processes the reading of IMU
@@ -73,7 +74,7 @@ void mpu6500_sample(uint8_t address, MPU6500_Gyro_bias *gyro_bias, MPU6500_Data_
 
 	 // Reading x component of the acceleration
 	 accel_data = ((int16_t)data_rec[0]<<8) | data_rec[1]; // Shifting data bytes to get data (data stored in 2 bytes for each component)
-	 imu_data->a_x = accel_data * 0.000122070;
+	 imu_data->a_x = accel_data * 0.000122070; // This is scaling for +/-4g range as per datasheet
 
 	 // Reading y component of the acceleration
 	 accel_data = ((int16_t)data_rec[2]<<8) | data_rec[3];
@@ -89,7 +90,7 @@ void mpu6500_sample(uint8_t address, MPU6500_Gyro_bias *gyro_bias, MPU6500_Data_
 
 	 // Reading x component of the angular velocity
 	 gyro_data = ((int16_t)data_rec[8]<<8) | data_rec[9];
-	 imu_data->omega_x = (gyro_data - gyro_bias->omega_x_bias) / 65.6;
+	 imu_data->omega_x = (gyro_data - gyro_bias->omega_x_bias) / 65.6;	// This is scaling for +/-500 dps as per datasheet
 
 	 // Reading y component of the angular velocity
 	 gyro_data = ((int16_t)data_rec[10]<<8) | data_rec[11];

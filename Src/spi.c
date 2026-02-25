@@ -9,8 +9,8 @@
 
 void spi_gpio_init(void)
 {
-	// datasheet p16 block diagram, SPI modules. We use SPI 1, connected to APB2
-	// datasheet p57 AF mapping, CLOCK PA5, MISO PA 6, MOSI PA7, any pin for SS for example PA9
+	// Datasheet p16 block diagram, SPI modules. We use SPI 1, connected to APB2
+	// Datasheet p57 AF mapping, CLOCK PA5, MISO PA 6, MOSI PA7, any pin for SS for example PA9
 
 	// Enable clock for GPIOA
 	RCC->AHB1ENR |= GPIOAEN;

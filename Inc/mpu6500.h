@@ -37,15 +37,16 @@ typedef struct
 
 
 // The document MPU6500 will be refered
-#define DEVID_R (0x75) //device ID register WHO_AM_I (name)
-#define DEVICE_ADDR (0x68) // p44 0x68 or 0x69 depending on AD0 pin. address of the chip
-#define DATA_FORMAT_R (0x1C) //// data format p6 how sensitive should the sensor be (range)
-#define POWER_CTL_R (0x6B) // p8 register used to put the sensor into "Measurement Mode." Without writing to it, that sensor stays in standby.
-#define DATA_START_ADDR (0x3B) // start address of the data register
+#define DEVID_R (0x75) // Device ID register WHO_AM_I (name)
+#define ACC_DATA_FORMAT_R (0x1C) // Accelerometer measurement range
+#define POWER_CTL_R (0x6B) // p8 register used to put the sensor into "Measurement Mode"
+#define DATA_START_ADDR (0x3B) // Start address of the data register
+#define GYRO_DATA_FORMAT_R (0x1B) // Gyroscope configuration register
 
-#define FOUR_G (0x08) // 4g check this just in case
+#define ACC_FOUR_G (0x08) // +/-4g accelerometer measurement range
+#define GYRO_500_DPS (0x08) // +/-500dps gyroscope measurement range
 #define RESET (0x00)
-#define SET_MEASURE_B (0x00) // wriging in power control // test, the original value is 0x00
+#define SET_MEASURE_B (0x00)
 
 #define READ_OPERATION 0x80
 
