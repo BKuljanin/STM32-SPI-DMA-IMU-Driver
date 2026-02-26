@@ -21,7 +21,7 @@
 #define SPI_CR2_TXDMAEN (1U<<1)
 
 
-void dma2_stream_2_3_init(uint32_t src_rx, uint32_t src_tx, uint32_t dst, uint32_t len) // Arguments: sources (for tx and rx), destination and length of the data
+void dma2_stream_2_3_init(uint8_t src_rx, uint8_t src_tx, uint32_t dst) // Arguments: sources (for tx and rx), destination and length of the data
 {	// Reference manual p205 table 29 shows DMA request mapping: SPI1_RX and SPI1_TX
 	// DMA2 Stream 2, Channel 3: SPI RX
 	// DMA2 Stream 3, Channel 3: SPI_TX
@@ -60,10 +60,13 @@ void dma2_stream_2_3_init(uint32_t src_rx, uint32_t src_tx, uint32_t dst, uint32
 	DMA2_Stream2->M0AR = src_rx; // Memory source. Stream peripheral address register. Reference manual p229. Source is memory. Memory 0 AR
 	DMA2_Stream3->M0AR = src_tx;
 
+	/*
 	// Set length of transfer, same for TX and RX in full duplex
 	DMA2_Stream2-> NDTR = len; // Register hold length of the transfer
 	DMA2_Stream3-> NDTR = len;
 	// This goes in other function, for now leave it here but this will move
+	 * , uint32_t len
+	 */
 
 	// Select stream 2 channel 3 and stream 3 channel 3
 	DMA2_Stream2->CR |= CHSEL3; // Reference manual p226 stream configuration register. CHSEL bit is for channel select. Bits 25,26,27. 011 is channel 3
