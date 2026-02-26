@@ -13,11 +13,12 @@
 #define CHSEL3 ((1U<<25) | (1U<<26))
 #define DMA_MEM_INC (1U<<10)
 #define DMA_DIR_MEM_TO_PERIPH (1U<<6)
-#define DMA_DIR_PERIPH_TO_MEM ((1U<<6) | (1U<<7))
+#define DMA_DIR_PERIPH_TO_MEM6 (1U<<6)
+#define DMA_DIR_PERIPH_TO_MEM7 (1U<<7)
 #define DMA_CR_TCIE (1U<<4)
 #define DMA_CR_EN (1U<<0)
-#define SPI_CR2_RXNE (1U<<0)
-#define SPI_CR2_TXE (1U<<1)
+#define SPI_CR2_RXDMAEN (1U<<0)
+#define SPI_CR2_TXDMAEN (1U<<1)
 
 
 void dma2_stream_2_3_init(uint32_t src_rx, uint32_t src_tx, uint32_t dst, uint32_t len) // Arguments: sources (for tx and rx), destination and length of the data
@@ -62,18 +63,23 @@ void dma2_stream_2_3_init(uint32_t src_rx, uint32_t src_tx, uint32_t dst, uint32
 	// Set length of transfer, same for TX and RX in full duplex
 	DMA2_Stream2-> NDTR = len; // Register hold length of the transfer
 	DMA2_Stream3-> NDTR = len;
+	// This goes in other function, for now leave it here but this will move
 
 	// Select stream 2 channel 3 and stream 3 channel 3
-	DMA2_Stream2->CR = CHSEL3; // Reference manual p226 stream configuration register. CHSEL bit is for channel select. Bits 25,26,27. 011 is channel 3
-	DMA2_Stream3->CR = CHSEL3;
+	DMA2_Stream2->CR |= CHSEL3; // Reference manual p226 stream configuration register. CHSEL bit is for channel select. Bits 25,26,27. 011 is channel 3
+	DMA2_Stream3->CR |= CHSEL3;
+	DMA2_Stream2->CR &= ~(1U<<27); // To be safe if this contains value from before
+	DMA2_Stream3->CR &= ~(1U<<27);
 
 	// Enable memory increment. Configure memory to increment because the data is stored in buffer, when first index of the buffer is accessed, next index increments
 	DMA2_Stream2->CR |= DMA_MEM_INC; // Same register as above, MINC (memory increment)
 	DMA2_Stream3->CR |= DMA_MEM_INC; // On both TX and RX use MINC
 
-	// Configure transfer direction (memory->peripheral). Move content of the array and move it to the UART periph.
-	DMA2_Stream2->CR |= DMA_DIR_MEM_TO_PERIPH;// Same register as above, bits 6,7 DIR. 00 periph to memory, 01 mem to periph, 10 mem-to-mem. We want 01 memory to peripheral, so we just set one bit
-	DMA2_Stream3->CR &= ~ DMA_DIR_PERIPH_TO_MEM; // Configure peripheral to memory direction for TX
+	// Configure transfer direction
+	DMA2_Stream2->CR &= ~DMA_DIR_PERIPH_TO_MEM6;// Same register as above, bits 6,7 DIR. 00 periph to memory, 01 mem to periph, 10 mem-to-mem. We want 01 memory to peripheral, so we just set one bit
+	DMA2_Stream2->CR &= ~DMA_DIR_PERIPH_TO_MEM7;
+
+	DMA2_Stream3->CR |= DMA_DIR_MEM_TO_PERIPH; // Configure peripheral to memory direction for TX
 
 	// Enable DMA transfer complete interrupt for receive only
 	DMA2_Stream2->CR |= DMA_CR_TCIE; // We will use only transfer complete interrupt. Reference manual p226-228 DMA stream configuration register. Transfer complete interrupt enable, TCIE bit 4
@@ -82,16 +88,30 @@ void dma2_stream_2_3_init(uint32_t src_rx, uint32_t src_tx, uint32_t dst, uint32
 	DMA2_Stream2->FCR = 0; // Fifo control register, reference manual p231. 0 in the register is interrupt disabled, also 0 is direct mode enable
 	DMA2_Stream3->FCR = 0;
 
-	// Enable DMA2 stream 2 and 3
-	DMA2_Stream2->CR |= DMA_CR_EN; // DMA stream configuration register p226 reference manual
-	DMA2_Stream3->CR |= DMA_CR_EN;
-
 	// Enable SPI DMA RX and TX
-	SPI1->CR2 |= SPI_CR2_RXNE; // This is configured in uart register. Ref man p822 bit 7 DMA for transmitter
-	SPI1->CR2 |= SPI_CR2_TXE;
+	SPI1->CR2 |= SPI_CR2_RXDMAEN;
+	SPI1->CR2 |= SPI_CR2_TXDMAEN;
 
 	// Enable DMA interrupt in NVIC. After transfer is completed interrupt occurs
 	NVIC_EnableIRQ(DMA2_Stream2_IRQn); // Transfer completed interrupt only for RX (stream 2)
+}
+
+void dma2_enable(void)
+{
+	// Enable DMA2 stream 2 and 3
+	DMA2_Stream2->CR |= DMA_CR_EN; // First enable RX stream because if TX is enabled first SPI can start clocking before enabling RX
+	DMA2_Stream3->CR |= DMA_CR_EN; // DMA stream configuration register p226 reference manual
+	while(DMA2_Stream2->CR & DMA_CR_EN){}
+	while(DMA2_Stream3->CR & DMA_CR_EN){}
+}
+
+void dma2_disable(void)
+{
+	// Enable DMA2 stream 2 and 3
+	DMA2_Stream2->CR &= ~DMA_CR_EN; // DMA stream configuration register p226 reference manual
+	DMA2_Stream3->CR &= ~DMA_CR_EN;
+	while(DMA2_Stream2->CR & DMA_CR_EN){}
+	while(DMA2_Stream3->CR & DMA_CR_EN){}
 }
 
 void spi_gpio_init(void)
