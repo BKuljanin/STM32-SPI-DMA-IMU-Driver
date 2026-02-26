@@ -87,8 +87,8 @@ void dma2_stream_2_3_init(uint32_t src_rx, uint32_t src_tx, uint32_t dst, uint32
 	DMA2_Stream3->CR |= DMA_CR_EN;
 
 	// Enable SPI DMA RX and TX
-	SPI2->CR2 |= SPI_CR2_RXNE; // This is configured in uart register. Ref man p822 bit 7 DMA for transmitter
-	SPI2->CR2 |= SPI_CR2_TXE;
+	SPI1->CR2 |= SPI_CR2_RXNE; // This is configured in uart register. Ref man p822 bit 7 DMA for transmitter
+	SPI1->CR2 |= SPI_CR2_TXE;
 
 	// Enable DMA interrupt in NVIC. After transfer is completed interrupt occurs
 	NVIC_EnableIRQ(DMA2_Stream2_IRQn); // Transfer completed interrupt only for RX (stream 2)
