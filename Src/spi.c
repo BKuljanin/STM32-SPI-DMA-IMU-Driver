@@ -21,7 +21,7 @@
 #define SPI_CR2_TXDMAEN (1U<<1)
 
 
-void dma2_stream_2_3_init(uint8_t src_rx, uint8_t src_tx, uint32_t dst) // Arguments: sources (for tx and rx), destination and length of the data
+void dma2_stream_2_3_init()
 {	// Reference manual p205 table 29 shows DMA request mapping: SPI1_RX and SPI1_TX
 	// DMA2 Stream 2, Channel 3: SPI RX
 	// DMA2 Stream 3, Channel 3: SPI_TX
@@ -52,21 +52,9 @@ void dma2_stream_2_3_init(uint8_t src_rx, uint8_t src_tx, uint32_t dst) // Argum
 	DMA2->LIFCR |= (1U<<27);
 
 	// Set the destination buffer (peripheral address register). Destination that the user will pass, reference manual p229
-	DMA2_Stream2->PAR = dst; // RX
-	DMA2_Stream3->PAR = dst; // TX
+	DMA2_Stream2->PAR = SPI1->DR; // RX
+	DMA2_Stream3->PAR = SPI1->DR; // TX
 	// Same peripheral is used by both streams, just different directions. Both streams access SPI1->DR
-
-	// Set the source buffers
-	DMA2_Stream2->M0AR = src_rx; // Memory source. Stream peripheral address register. Reference manual p229. Source is memory. Memory 0 AR
-	DMA2_Stream3->M0AR = src_tx;
-
-	/*
-	// Set length of transfer, same for TX and RX in full duplex
-	DMA2_Stream2-> NDTR = len; // Register hold length of the transfer
-	DMA2_Stream3-> NDTR = len;
-	// This goes in other function, for now leave it here but this will move
-	 * , uint32_t len
-	 */
 
 	// Select stream 2 channel 3 and stream 3 channel 3
 	DMA2_Stream2->CR |= CHSEL3; // Reference manual p226 stream configuration register. CHSEL bit is for channel select. Bits 25,26,27. 011 is channel 3
@@ -115,6 +103,21 @@ void dma2_disable(void)
 	DMA2_Stream3->CR &= ~DMA_CR_EN;
 	while(DMA2_Stream2->CR & DMA_CR_EN){}
 	while(DMA2_Stream3->CR & DMA_CR_EN){}
+}
+
+void set_dma_transfer_length(uint32_t len)
+{
+	// Set length of transfer, same for TX and RX in full duplex
+	DMA2_Stream2-> NDTR = len; // Register hold length of the transfer
+	DMA2_Stream3-> NDTR = len;
+
+}
+
+void set_dma_source(uint8_t src_rx, uint8_t src_tx)
+{
+// Set the source buffers
+DMA2_Stream2->M0AR = src_rx; // Memory source. Stream peripheral address register. Reference manual p229. Source is memory. Memory 0 AR
+DMA2_Stream3->M0AR = src_tx;
 }
 
 void spi_gpio_init(void)
@@ -261,3 +264,4 @@ void cs_disable(void)
 	GPIOA->ODR |= (1U<<9); // Set to 1 to disable it
 
 }
+

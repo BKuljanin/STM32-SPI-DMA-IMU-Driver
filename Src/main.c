@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include "stm32f4xx.h"
 #include <stdint.h>
-#include "uart.h"
 #include "mpu6500.h"
 #include "systick.h"
 #include "exti.h"
@@ -16,8 +15,8 @@ uint16_t gyro_calibrate_samples = 200;
 volatile uint32_t systick_ms; // Elapsed time in ms
 uint32_t last_imu_call = 0;
 
-uint8_t data_rec[14];
-uint8_t data_transmit;
+uint8_t data_rec[15];
+// 14 bytes for reading (2 per variable, acceleration (x,y,z), angular velocity (x,y,z) and temperature plus one dummy for clocking in write
 
 
 
@@ -25,20 +24,20 @@ int main(void)
 {
 	SysTick_Init();
 	pc13_exti_init();
-	dma2_stream_2_3_init(data_rec, data_transmit, (uint32_t)&USART2->DR);
+	dma2_stream_2_3_init();
 	mpu6500_init();
-	mpu6500_calibrate_gyro(gyro_calibrate_samples, &gyro_bias);
+	//mpu6500_calibrate_gyro(gyro_calibrate_samples, &gyro_bias);
 
-		while(1)
-
-			{
-
+	while(1)
+		{
+		/*
 			if ((systick_ms - last_imu_call) >= 1) // Schedules IMU reading every 1ms (1kHz)
-					    {
-							last_imu_call = systick_ms;
-							mpu6500_sample(DATA_START_ADDR, &gyro_bias, &imu_data); // Read and store in data_rec
-					    }
-			}
+				{
+					last_imu_call = systick_ms;
+					mpu6500_sample(DATA_START_ADDR, &gyro_bias, &imu_data); // Read and store in data_rec
+				}
+		*/
+		}
 }
 
 
@@ -52,7 +51,11 @@ void SysTick_Handler(void)
 // DMA completed interrupt
 static void dma_callback(void)
 {
+	// Pull cs line high to disable slave
+	cs_disable();
 
+	// Disable DMA
+	dma2_disable();
 }
 
 // We have to implement DMA interrupt request handler. Only for receive stream

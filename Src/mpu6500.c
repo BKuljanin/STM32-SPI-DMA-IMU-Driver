@@ -1,23 +1,32 @@
 #include "mpu6500.h"
 
 
-
 void mpu6500_read(uint8_t address, uint8_t *rxdata)
-{
+{	/* rxdata contains additional byte at [0] position. That byte is dummy used to store read values during write
+	operation where we clock out address byte, during that time we receive data (because it's full duplex) from the slave that we don't need.
+	Later that byte is skipped in the processing of the data. */
+
 	// Set read operation
 	address |= READ_OPERATION;
+
+	txdata[0] = address;
+
+	for (int i = 1; i < sizeof(rxdata)-1; i++) // Generating (size+1)-1 additional dummy bytes, so in total there is the same amount to write and read
+	{
+	    txdata[i] = 0xFF;         // Dummy bytes that are sent during read operation
+	}
 
 	// Pull cs line low to enable slave
 	cs_enable();
 
-	// Send address
-	spi1_transmit(&address, 1); // Start a read operation from this register, and auto increment
+	// Set DMA transfer length
+	set_dma_transfer_length(sizeof(rxdata));	// Setting size to read bytes length +1. That +1 is for write operation that goes before reading
 
-	// Read 14 bytes
-	spi1_receive(rxdata, 14); // store received data in rxdata, 14 bytes - 7 variables, 2 bytes each (x,y,z acceleration, x,y,z angular velocity, temperature)
+	// Set DMA memory source for transmit and receive
+	set_dma_source(rxdata, txdata);
 
-	// Pull cs line high to disable slave
-	cs_disable();
+	// Enable DMA
+	dma2_enable();
 
 }
 
@@ -25,20 +34,23 @@ void mpu6500_read(uint8_t address, uint8_t *rxdata)
 void mpu6500_write (uint8_t address, uint8_t value)
 {
 
-	 uint8_t reg = address & 0x7F; // 0 on MSB for writing, for MPU6500
-	 uint8_t val = value;
+	 uint8_t data[2];
+	 uint8_t dummy_rx; // In writing there is no need to read received data, it's just configuring registers of the slave
+
+	 data[0] = address & 0x7F; // 0 on MSB for writing, for MPU6500
+	 data[1] = value;			// Data we are writing
 
 	// Pull cs line low to enable slave
 	cs_enable();
 
-	// Transmit address
-	spi1_transmit(&reg, 1);
+	// Set DMA transfer length
+	set_dma_transfer_length(sizeof(data));
 
-	// Transmit data
-	spi1_transmit(&val, 1);
+	// Set DMA memory source for transmit and receive
+	set_dma_source(dummy_rx, data);	// Receive to dummy data and send data which we constructed
 
-	// Pull cs line high to disable slave
-	cs_disable();
+	// Enable DMA
+	dma2_enable();
 
 }
 

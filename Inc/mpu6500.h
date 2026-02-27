@@ -12,7 +12,7 @@
 
 #include <stdint.h>
 
-// Defining structures
+// IMU data structure
 typedef struct
 {
     float a_x;
@@ -27,6 +27,7 @@ typedef struct
 
 } MPU6500_Data_t;
 
+// Gyroscope bias calibration structure
 typedef struct
 {
     int16_t omega_x_bias;
