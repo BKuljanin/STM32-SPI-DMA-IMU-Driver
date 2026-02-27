@@ -97,8 +97,6 @@ void dma2_enable(void)
 	// Enable DMA2 stream 2 and 3
 	DMA2_Stream2->CR |= DMA_CR_EN; // First enable RX stream because if TX is enabled first SPI can start clocking before enabling RX
 	DMA2_Stream3->CR |= DMA_CR_EN; // DMA stream configuration register p226 reference manual
-	/*while(DMA2_Stream2->CR & DMA_CR_EN){}
-	while(DMA2_Stream3->CR & DMA_CR_EN){}*/
 }
 
 void dma2_disable(void)
@@ -106,8 +104,8 @@ void dma2_disable(void)
 	// Enable DMA2 stream 2 and 3
 	DMA2_Stream2->CR &= ~DMA_CR_EN; // DMA stream configuration register p226 reference manual
 	DMA2_Stream3->CR &= ~DMA_CR_EN;
-	/*while(DMA2_Stream2->CR & DMA_CR_EN){}
-	while(DMA2_Stream3->CR & DMA_CR_EN){}*/
+    while (DMA2_Stream2->CR & DMA_CR_EN) {}
+    while (DMA2_Stream3->CR & DMA_CR_EN) {}
 }
 
 void set_dma_transfer_length(uint32_t len)

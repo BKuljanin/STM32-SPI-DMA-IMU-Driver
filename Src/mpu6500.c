@@ -8,7 +8,9 @@ void mpu6500_read(uint8_t address, uint8_t *rxdata, uint16_t len)
 	// Set read operation
 	address |= READ_OPERATION;
 
-	uint8_t txdata[15];
+	static uint8_t txdata[15];
+	// IMPORTANT: This buffer must be static (or global) because DMA continues to read from this memory after the function returns; if it were a local
+	// stack variable, its memory could be reused/overwritten, causing corrupted transfers or hard faults
 
 	txdata[0] = address;
 
@@ -35,8 +37,10 @@ void mpu6500_read(uint8_t address, uint8_t *rxdata, uint16_t len)
 void mpu6500_write (uint8_t address, uint8_t value)
 {
 
-	 uint8_t data[2];
-	 uint8_t dummy_rx; // In writing there is no need to read received data, it's just configuring registers of the slave
+	 static uint8_t data[2];
+	 static uint8_t dummy_rx; // In writing there is no need to read received data, it's just configuring registers of the slave
+	 // IMPORTANT: This buffer must be static (or global) because DMA continues to read from this memory after the function returns; if it were a local
+	 // stack variable, its memory could be reused/overwritten, causing corrupted transfers or hard faults
 
 	 data[0] = address & 0x7F; // 0 on MSB for writing, for MPU6500
 	 data[1] = value;			// Data we are writing
@@ -48,7 +52,7 @@ void mpu6500_write (uint8_t address, uint8_t value)
 	set_dma_transfer_length(sizeof(data));
 
 	// Set DMA memory source for transmit and receive
-	set_dma_source(dummy_rx, data);	// Receive to dummy data and send data which we constructed
+	set_dma_source(&dummy_rx, data);	// Receive to dummy data and send data which we constructed
 
 	// Enable DMA
 	dma2_enable();
@@ -140,13 +144,13 @@ void mpu6500_calibrate_gyro(uint16_t gyro_samples, MPU6500_Gyro_bias *gyro_bias)
 // DMA completed interrupt
 void dma_callback(MPU6500_Data_t *imu_data, MPU6500_Gyro_bias *gyro_bias, uint8_t *data_rec)
 {
-	// Handles disabling SPI slave and DMA transfer. Takes received data, processes it and writes IMU data to the variable of type MPU6500_Data_t
-	mpu6500_process(gyro_bias, imu_data, data_rec);
+	// Disable DMA
+	dma2_disable();
 
 	// Pull CS line high to disable slave
 	cs_disable();
 
-	// Disable DMA
-	dma2_disable();
+	// Handles disabling SPI slave and DMA transfer. Takes received data, processes it and writes IMU data to the variable of type MPU6500_Data_t
+	mpu6500_process(gyro_bias, imu_data, data_rec);
 
 }
