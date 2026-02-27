@@ -12,7 +12,7 @@ void mpu6500_read(uint8_t address, uint8_t *rxdata, uint16_t len)
 
 	txdata[0] = address;
 
-	for (int i = 1; i < len-1; i++) // Generating 14 additional dummy bytes, so in total there is the same amount to write and read
+	for (int i = 1; i < len; i++) // Generating 14 additional dummy bytes, so in total there is the same amount to write and read
 	{
 	    txdata[i] = 0xFF;         // Dummy bytes that are sent during read operation
 	}
@@ -21,7 +21,7 @@ void mpu6500_read(uint8_t address, uint8_t *rxdata, uint16_t len)
 	cs_enable();
 
 	// Set DMA transfer length
-	set_dma_transfer_length(sizeof(rxdata));	// Setting size to read bytes length +1. That +1 is for write operation that goes before reading
+	set_dma_transfer_length(len);	// Setting size to read bytes length +1. That +1 is for write operation that goes before reading
 
 	// Set DMA memory source for transmit and receive
 	set_dma_source(rxdata, txdata);
