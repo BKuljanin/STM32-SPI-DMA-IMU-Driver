@@ -13,7 +13,7 @@ void mpu6500_read(uint8_t address, uint8_t *rxdata, uint16_t len)
 	// IMPORTANT: This buffer must be static (or global) because DMA continues to read from this memory after the function returns; if it were a local
 	// stack variable, its memory could be reused/overwritten, causing corrupted transfers or hard faults
 
-	txdata[0] = address;
+	txdata[0] = address; // Register address of the slave from where we read
 
 	for (int i = 1; i < len; i++) // Generating 14 additional dummy bytes, so in total there is the same amount to write and read
 	{
@@ -26,7 +26,8 @@ void mpu6500_read(uint8_t address, uint8_t *rxdata, uint16_t len)
 	// Disable DMA
 	dma2_disable();
 
-	dma2_clear_spi1_flags(); // Clear all pending interrupt flags (TC, HT, TE, DME, FE) for DMA2 Stream2 and Stream3
+	// Clear all pending interrupt flags (TC, HT, TE, DME, FE) for DMA2 Stream2 and Stream3
+	dma2_clear_spi1_flags();
 
 	// Set DMA transfer length
 	set_dma_transfer_length(len);	// Setting size to read bytes length +1. That +1 is for write operation that goes before reading
@@ -34,7 +35,7 @@ void mpu6500_read(uint8_t address, uint8_t *rxdata, uint16_t len)
 	// Set DMA memory source for transmit and receive
 	set_dma_source(rxdata, txdata);
 
-	// Enable DMA
+	// Enable DMA now that everything is configured
 	dma2_enable();
 
 }
@@ -208,18 +209,19 @@ void mpu6500_calibrate_imu(uint16_t calibration_samples, MPU6500_IMU_bias *imu_b
     imu_bias->omega_z_bias = sum_omegaz / calibration_samples;
     imu_bias->a_x_bias = sum_ax / calibration_samples;
     imu_bias->a_y_bias = sum_ay / calibration_samples;
-    imu_bias->a_z_bias = (sum_az / calibration_samples) - 8192;	// For z calibration is done for g, this is g before scaling (in +/-4g range)
+    imu_bias->a_z_bias = (sum_az / calibration_samples) - 8192;	// For z acceleration calibration is done for g, this is g before scaling (in +/-4g range)
 
 }
 
 
 // DMA completed interrupt
 void dma_callback(MPU6500_Data_t *imu_data, MPU6500_IMU_bias *imu_bias, uint8_t *data_rec)
-{
-    // 1) Wait until SPI finished shifting out the last bit
+{	// Handles disabling SPI slave and DMA transfer
+
+    // Wait until SPI finished shifting out the last bit
     while (SPI1->SR & SR_BSY) {}
 
-    // 2) Clear possible OVR (safe even if not set)
+    // Clear possible OVR (safe even if not set)
     volatile uint8_t tmp;
     tmp = SPI1->DR;
     tmp = SPI1->SR;
@@ -231,7 +233,7 @@ void dma_callback(MPU6500_Data_t *imu_data, MPU6500_IMU_bias *imu_bias, uint8_t 
 	// Pull CS line high to disable slave
 	cs_disable();
 
-	// Handles disabling SPI slave and DMA transfer. Takes received data, processes it and writes IMU data to the variable of type MPU6500_Data_t
+	// Takes received data, processes it and writes IMU data to the passed variable of type MPU6500_Data_t
 	mpu6500_process(imu_bias, imu_data, data_rec);
 
 }

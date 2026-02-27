@@ -2,31 +2,21 @@
 #include "stm32f4xx.h"
 #include <stdint.h>
 #include "mpu6500.h"
-#include "systick.h"
 #include "exti.h"
 
-int16_t x,y,z;
-float xg,yg,zg;
+MPU6500_Data_t imu_data; 	// Structure where IMU readings are stored
+MPU6500_IMU_bias imu_bias;	// Structure where IMU bias are stored
+uint16_t imu_calibrate_samples = 200;	// Number of IMU samples for calibration
+uint8_t data_rec[15]; // 14 bytes for reading (2 per variable, acceleration (x,y,z), angular velocity (x,y,z) and temperature plus one dummy for clocking in write
 
-MPU6500_Data_t imu_data;
-MPU6500_IMU_bias imu_bias;
-uint16_t imu_calibrate_samples = 200;
-
-volatile uint32_t systick_ms; // Elapsed time in ms
-uint32_t last_imu_call = 0;
-
-uint8_t data_rec[15];
-// 14 bytes for reading (2 per variable, acceleration (x,y,z), angular velocity (x,y,z) and temperature plus one dummy for clocking in write
-
-static volatile uint8_t imu_dma_busy = 0;
+static volatile uint8_t imu_dma_busy = 0; // DMA busy flag
 
 
 int main(void)
 {
-	SysTick_Init();
-	mpu6500_init();
-	dma2_transfer_completeted_interrupt_enable();
-	mpu6500_calibrate_imu(imu_calibrate_samples, &imu_bias);
+	mpu6500_init();	// Initialize the IMU by configuring its registers
+	dma2_transfer_completeted_interrupt_enable();	// Enabling DMA transfer completed interrupt
+	mpu6500_calibrate_imu(imu_calibrate_samples, &imu_bias); // Calibration of the IMU
 	pc13_exti_init(); // PC13 for data ready interrupt
 	dma2_stream_2_3_init(); // Initialize DMA
 
@@ -37,14 +27,7 @@ int main(void)
 }
 
 
-// Counting time in ms to schedule task
-void SysTick_Handler(void)
-{
-    systick_ms++;
-}
-
-
-// We have to implement DMA interrupt request handler. Only for receive stream
+// Implementing DMA interrupt request handler, only for receive stream
 void DMA2_Stream2_IRQHandler(void)
 {
 	// Checking if its transfer complete interrupt that has occurred. If that is the case run the code
@@ -62,11 +45,11 @@ void DMA2_Stream2_IRQHandler(void)
 }
 
 
-// Interrupt handler for this particular interrupt is EXTI15_10_...
+// Interrupt handler for INT pin (data ready) of the IMU
 void EXTI15_10_IRQHandler(void){
 
 	// When interrupt occurs we enter this interrupt request handler function
-	if ((EXTI->PR & LINE13) != 0)// We check if its from line 13
+	if ((EXTI->PR & LINE13) != 0)	// We check if the interrupt is from line 13
 	{
 		// Clear PR flag
 		EXTI->PR |= LINE13;
@@ -74,7 +57,7 @@ void EXTI15_10_IRQHandler(void){
 		if (!imu_dma_busy)
 		        {
 		            imu_dma_busy = 1;
-		            mpu6500_read(DATA_START_ADDR, data_rec, sizeof(data_rec));
+		            mpu6500_read(DATA_START_ADDR, data_rec, sizeof(data_rec)); // Start sensor reading via SPI DMA
 		        }
 	}
 }

@@ -5,7 +5,7 @@
 
 void pc13_exti_init(void)
 {
-	// Recommended that before we configure interrupt  we disable global interrupt:
+	// Recommended that before we configure interrupt we disable global interrupt:
 	__disable_irq();
 
 	// Enable clock access for GPIOC
@@ -27,7 +27,7 @@ void pc13_exti_init(void)
 	EXTI->IMR |= (1U<<13); // Reference manual p244. 0: Interrupt request from line x is masked, 1: not masked
 
 	// Interrupt triggered by rising or falling edge, now choosing rising edge trigger for MPU6500 data ready pin
-	EXTI->RTSR |= (1U<<13);// Falling trigger selection register, reference manual p245 0: disabled falling trigger, 1 enabled
+	EXTI->RTSR |= (1U<<13);// Rising trigger selection register, reference manual p245 0: disabled rising trigger, 1 enabled
 
 	// Enable EXTI13 line in NVIC
 	NVIC_EnableIRQ(EXTI15_10_IRQn);

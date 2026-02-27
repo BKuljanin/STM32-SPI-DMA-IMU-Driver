@@ -5,7 +5,6 @@
 #define GPIOAEN (1U<<0)
 
 #define SR_TXE (1U<<1)
-
 #define SR_RXNE (1U<<0)
 
 // DMA related configuration
@@ -66,11 +65,12 @@ void dma2_stream_2_3_init()
 	DMA2_Stream2->CR |= DMA_MEM_INC; // Same register as above, MINC (memory increment)
 	DMA2_Stream3->CR |= DMA_MEM_INC; // On both TX and RX use MINC
 
-	// Configure transfer direction
+	// Configure transfer direction for RX
 	DMA2_Stream2->CR &= ~DMA_DIR_PERIPH_TO_MEM6;// Same register as above, bits 6,7 DIR. 00 periph to memory, 01 mem to periph, 10 mem-to-mem. We want 01 memory to peripheral, so we just set one bit
 	DMA2_Stream2->CR &= ~DMA_DIR_PERIPH_TO_MEM7;
 
-	DMA2_Stream3->CR |= DMA_DIR_MEM_TO_PERIPH; // Configure peripheral to memory direction for TX
+	// Configure peripheral to memory direction for TX
+	DMA2_Stream3->CR |= DMA_DIR_MEM_TO_PERIPH;
 
 	// Enable DMA transfer complete interrupt for receive only
 	DMA2_Stream2->CR |= DMA_CR_TCIE; // We will use only transfer complete interrupt. Reference manual p226-228 DMA stream configuration register. Transfer complete interrupt enable, TCIE bit 4
@@ -272,7 +272,8 @@ void spi1_receive_blocking(uint8_t *data, uint32_t size)
 }
 
 void dma2_clear_spi1_flags(void)
-{
+{	// Clear all pending interrupt flags (TC, HT, TE, DME, FE) for DMA2 Stream2 and Stream3
+
     // Stream2 flags (TCIF2 etc.) are in LIFCR bits around 16..21
     DMA2->LIFCR = (1U<<16)|(1U<<18)|(1U<<19)|(1U<<20)|(1U<<21); // Stream2 clear all
 
