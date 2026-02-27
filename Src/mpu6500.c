@@ -1,7 +1,6 @@
 #include "mpu6500.h"
 
-
-void mpu6500_read(uint8_t address, uint8_t *rxdata)
+void mpu6500_read(uint8_t address, uint8_t *rxdata, uint16_t len)
 {	/* rxdata contains additional byte at [0] position. That byte is dummy used to store read values during write
 	operation where we clock out address byte, during that time we receive data (because it's full duplex) from the slave that we don't need.
 	Later that byte is skipped in the processing of the data. */
@@ -9,9 +8,11 @@ void mpu6500_read(uint8_t address, uint8_t *rxdata)
 	// Set read operation
 	address |= READ_OPERATION;
 
+	uint8_t txdata[15];
+
 	txdata[0] = address;
 
-	for (int i = 1; i < 14; i++) // Generating 14 additional dummy bytes, so in total there is the same amount to write and read
+	for (int i = 1; i < len-1; i++) // Generating 14 additional dummy bytes, so in total there is the same amount to write and read
 	{
 	    txdata[i] = 0xFF;         // Dummy bytes that are sent during read operation
 	}
@@ -136,15 +137,8 @@ void mpu6500_calibrate_gyro(uint16_t gyro_samples, MPU6500_Gyro_bias *gyro_bias)
 }
 
 
-// EXTI interrupt PC13 pin for IMU data ready (INT pin of MCU)
-static void exti_callback(uint8_t *data_rec)
-{
-	mpu6500_read(DATA_START_ADDR, data_rec);
-}
-
-
 // DMA completed interrupt
-static void dma_callback(MPU6500_Data_t *imu_data, MPU6500_Gyro_bias *gyro_bias, uint8_t *data_rec)
+void dma_callback(MPU6500_Data_t *imu_data, MPU6500_Gyro_bias *gyro_bias, uint8_t *data_rec)
 {
 	// Handles disabling SPI slave and DMA transfer. Takes received data, processes it and writes IMU data to the variable of type MPU6500_Data_t
 	mpu6500_process(gyro_bias, imu_data, data_rec);

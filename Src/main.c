@@ -18,7 +18,7 @@ uint32_t last_imu_call = 0;
 uint8_t data_rec[15];
 // 14 bytes for reading (2 per variable, acceleration (x,y,z), angular velocity (x,y,z) and temperature plus one dummy for clocking in write
 
-
+static volatile uint8_t imu_dma_busy = 0;
 
 int main(void)
 {
@@ -60,6 +60,8 @@ void DMA2_Stream2_IRQHandler(void)
 
 		// Callback function to disable SPI DMA transfer and process the transfered data
 		dma_callback(&imu_data, &gyro_bias, data_rec);
+
+		imu_dma_busy = 0; // Clearing busy flag when data is processed
 	}
 }
 
@@ -73,7 +75,10 @@ void EXTI15_10_IRQHandler(void){
 		// Clear PR flag
 		EXTI->PR |= LINE13;
 
-		// Call SPI DMA read of MPU6500 slave
-		exti_callback(data_rec);
+		if (!imu_dma_busy)
+		        {
+		            imu_dma_busy = 1;
+		            mpu6500_read(DATA_START_ADDR, data_rec, sizeof(data_rec));
+		        }
 	}
 }
