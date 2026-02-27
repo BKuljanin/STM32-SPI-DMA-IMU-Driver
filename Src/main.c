@@ -18,7 +18,7 @@ int main(void)
 	dma2_transfer_completeted_interrupt_enable();	// Enabling DMA transfer completed interrupt
 	mpu6500_calibrate_imu(imu_calibrate_samples, &imu_bias); // Calibration of the IMU
 	pc13_exti_init(); // PC13 for data ready interrupt
-	dma2_stream_2_3_init(); // Initialize DMA
+	dma2_stream_2_3_init(); // Initialize DMA streams 2 and 3 for SPI1
 
 	while(1)
 		{
