@@ -132,7 +132,7 @@ void mpu6500_init(void)
 	mpu6500_write_blocking(INTERRUPT_EN_R, INTERRUPT_EN);
 
 	// Enable LP filter and configure interrupt when filtered data is ready (1kHz)
-	mpu6500_write_blocking(IMU_CONFIG_R, LP_FILTER_1KHZ);
+	mpu6500_write_blocking(IMU_CONFIG_R, LP_FILTER_1KHZ);	// 41 Hz LP cutoff according to p14
 	// Confirmed on logic analyzer observing INT pin of the IMU
 
 }
