@@ -20,6 +20,8 @@ uint8_t data_rec[15];
 
 static volatile uint8_t imu_dma_busy = 0;
 
+volatile uint8_t debug=0;
+
 int main(void)
 {
 	SysTick_Init();
@@ -57,11 +59,12 @@ void DMA2_Stream2_IRQHandler(void)
 	{
 		// Clear flag
 		DMA2->LIFCR |= HIFCR_CTCIF2;// Reference manual p225
-
+		//debug = 1;
 		// Callback function to disable SPI DMA transfer and process the transfered data
 		dma_callback(&imu_data, &gyro_bias, data_rec);
 
 		imu_dma_busy = 0; // Clearing busy flag when data is processed
+		//debug = 2;
 	}
 }
 
@@ -74,11 +77,12 @@ void EXTI15_10_IRQHandler(void){
 	{
 		// Clear PR flag
 		EXTI->PR |= LINE13;
-
+		debug=3;
 		if (!imu_dma_busy)
 		        {
 		            imu_dma_busy = 1;
 		            mpu6500_read(DATA_START_ADDR, data_rec, sizeof(data_rec));
+		            debug = 4;
 		        }
 	}
 }

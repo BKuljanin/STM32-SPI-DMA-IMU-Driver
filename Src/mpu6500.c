@@ -83,6 +83,9 @@ void mpu6500_init(void)
 	// Set data format of gyroscope to range +/-500dps
 	mpu6500_write(GYRO_DATA_FORMAT_R, GYRO_500_DPS);
 
+	// Enable interrupt when data ready
+	mpu6500_write(INTERRUPT_EN_R, INTERRUPT_EN);
+
 }
 
 // Reads and processes the reading of IMU
