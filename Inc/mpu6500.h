@@ -48,12 +48,14 @@ typedef struct
 #define DATA_START_ADDR (0x3B) // Start address of the data register
 #define GYRO_DATA_FORMAT_R (0x1B) // Gyroscope configuration register
 #define INTERRUPT_EN_R (0x38)	// p29 interrupt enable register, set bit 1 to enable interrupt
+#define IMU_CONFIG_R (0x1A) // p13 here digital lowpass filter is activated. Interrupt for data ready now on 1kHz instead of default 8kHz
 
 #define ACC_FOUR_G (0x08) // +/-4g accelerometer measurement range
 #define GYRO_500_DPS (0x08) // +/-500dps gyroscope measurement range
 #define RESET (0x00)
 #define SET_MEASURE_B (0x00)
 #define INTERRUPT_EN (0x01)
+#define LP_FILTER_1KHZ (0x03)
 
 #define READ_OPERATION 0x80
 

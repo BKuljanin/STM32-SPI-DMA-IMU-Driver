@@ -139,7 +139,9 @@ void mpu6500_init(void)
 	// Enable interrupt when data ready
 	mpu6500_write_blocking(INTERRUPT_EN_R, INTERRUPT_EN);
 
-	mpu6500_write_blocking(0x37, 0x00);   // INT_PIN_CFG test line
+	// Enable LP filter and configure interrupt when filtered data is ready (1kHz)
+	mpu6500_write_blocking(IMU_CONFIG_R, LP_FILTER_1KHZ);
+	// Confirmed on logic analyzer observing INT pin of the IMU
 
 }
 
