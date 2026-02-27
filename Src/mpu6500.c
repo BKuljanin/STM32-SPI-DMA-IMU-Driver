@@ -1,15 +1,6 @@
 #include "mpu6500.h"
 #include "spi.h"
 
-static inline void dma2_clear_spi1_flags(void)
-{
-    // Stream2 flags (TCIF2 etc.) are in LIFCR bits around 16..21
-    DMA2->LIFCR = (1U<<16)|(1U<<18)|(1U<<19)|(1U<<20)|(1U<<21); // Stream2 clear all
-
-    // Stream3 flags are in LIFCR bits around 22..27
-    DMA2->LIFCR = (1U<<22)|(1U<<24)|(1U<<25)|(1U<<26)|(1U<<27); // Stream3 clear all
-}
-
 void mpu6500_read(uint8_t address, uint8_t *rxdata, uint16_t len)
 {	/* rxdata contains additional byte at [0] position. That byte is dummy used to store read values during write
 	operation where we clock out address byte, during that time we receive data (because it's full duplex) from the slave that we don't need.
@@ -35,7 +26,7 @@ void mpu6500_read(uint8_t address, uint8_t *rxdata, uint16_t len)
 	// Disable DMA
 	dma2_disable();
 
-	dma2_clear_spi1_flags(); // test line
+	dma2_clear_spi1_flags(); // Clear all pending interrupt flags (TC, HT, TE, DME, FE) for DMA2 Stream2 and Stream3
 
 	// Set DMA transfer length
 	set_dma_transfer_length(len);	// Setting size to read bytes length +1. That +1 is for write operation that goes before reading

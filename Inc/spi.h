@@ -23,6 +23,7 @@ void set_dma_transfer_length(uint32_t len);
 void set_dma_source(uint8_t *src_rx, uint8_t *src_tx);
 void spi1_transmit_blocking(uint8_t *data, uint32_t size);
 void spi1_receive_blocking(uint8_t *data, uint32_t size);
+void dma2_clear_spi1_flags(void);
 
 
 #define HISR_TCIF2 (1U<<21)

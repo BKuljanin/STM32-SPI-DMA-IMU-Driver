@@ -271,4 +271,11 @@ void spi1_receive_blocking(uint8_t *data, uint32_t size)
 	}
 }
 
+void dma2_clear_spi1_flags(void)
+{
+    // Stream2 flags (TCIF2 etc.) are in LIFCR bits around 16..21
+    DMA2->LIFCR = (1U<<16)|(1U<<18)|(1U<<19)|(1U<<20)|(1U<<21); // Stream2 clear all
 
+    // Stream3 flags are in LIFCR bits around 22..27
+    DMA2->LIFCR = (1U<<22)|(1U<<24)|(1U<<25)|(1U<<26)|(1U<<27); // Stream3 clear all
+}
