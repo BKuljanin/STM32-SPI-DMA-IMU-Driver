@@ -10,7 +10,7 @@ It implements a fast SPI1 + DMA2 driver for the MPU6500 using the IMU Data Ready
 - Data Ready interrupt → start DMA transfer (event-driven sampling)
 - DMA Transfer Complete ISR → stop DMA, release CS, parse data
 - IMU initialization
-- IMU calibration (blocking read used during startup only)
+- IMU calibration
 
 ---
 This project reads the **MPU6500** IMU over **SPI** using **DMA** and produces:
@@ -36,7 +36,7 @@ This project configures the IMU so that the Data Ready interrupt occurs at ~1 kH
 
 ## High-Level Flow
 
-- MPU6500 INT pin asserts when new sensor data is ready (Data Ready interrupt).
+- MPU6500 INT pin rising edge occurs when new sensor data is ready (Data Ready interrupt).
 - STM32 EXTI interrupt fires (PC13 in this project).
 - In EXTI15_10_IRQHandler():
     - configure DMA NDTR + buffer addresses
@@ -48,7 +48,7 @@ This project configures the IMU so that the Data Ready interrupt occurs at ~1 kH
 - In DMA2_Stream2_IRQHandler():
     - clear DMA flags
     - disable DMA streams
-    - bring CS high
+    - bring CS high to disable slave
     - parse raw data → apply scaling and bias → update MPU6500_Data_t
 
 ---
@@ -71,14 +71,15 @@ This project configures the IMU so that the Data Ready interrupt occurs at ~1 kH
 
 ### `main.c`
 
-- System clock configuration
 - GPIO initialization
 - SPI in DMA mode initialization
 - MPU6500 initialization
 - IMU calibration
 - EXTI configuration for Data Ready
 - Interrupts used:
+  
     -EXTI15_10_IRQHandler() → Data Ready triggers a DMA read
+  
     -DMA2_Stream2_IRQHandler() → RX DMA transfer complete
 
 ---
@@ -111,7 +112,6 @@ Functions:
 
   Handles disabling SPI slave and DMA transfer on DMA completed interrupt. Calls processing function.
 
-
 ---
 
 ### `spi.h / spi.c (Core->Inc/Src)`
@@ -123,25 +123,25 @@ Configures **SPI** peripheral in **DMA** mode.
 
 - `dma2_enable()/dma2_disable;`
 
-  Enable and disable DMA helper functions.
+  Enable and disable DMA2 helper functions.
 
-  - `set_dma_transfer_length()/set_dma_source;`
+- `set_dma_transfer_length()/set_dma_source();`
  
-  Sets DMA transfer length and DMA memory source for both transmit and receive.
+  Sets DMA transfer length and DMA memory sources for transmit and receive.
 
-  - `spi_gpio_init();`
+- `spi_gpio_init();`
  
   Initializes GPIO pins for SPI protocol.
 
-  - `spi1_config();`
+- `spi1_config();`
  
   Initializes SPI1 peripheral.
 
-  - `cs_enable()/cs_disable();`
+- `cs_enable()/cs_disable();`
  
   Pulling CS line low to select the slave, pulls high to disable the slave.
 
-  - `dma2_clear_spi1_flags;`
+- `dma2_clear_spi1_flags;`
  
   Clear all pending interrupt flags (TC, HT, TE, DME, FE) for DMA2 Stream2 and Stream3.
 
