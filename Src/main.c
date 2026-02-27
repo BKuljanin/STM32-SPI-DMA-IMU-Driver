@@ -24,11 +24,11 @@ static volatile uint8_t imu_dma_busy = 0;
 int main(void)
 {
 	SysTick_Init();
-	dma2_stream_2_3_init(); // Initialize DMA
 	mpu6500_init();
 	dma2_transfer_completeted_interrupt_enable();
-	pc13_exti_init(); // PC13 for data ready interrupt
 	mpu6500_calibrate_imu(imu_calibrate_samples, &imu_bias);
+	pc13_exti_init(); // PC13 for data ready interrupt
+	dma2_stream_2_3_init(); // Initialize DMA
 
 	while(1)
 		{

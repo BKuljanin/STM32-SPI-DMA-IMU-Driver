@@ -77,6 +77,25 @@ void mpu6500_write (uint8_t address, uint8_t value)
 
 }
 
+void mpu6500_read_blocking(uint8_t address, uint8_t *rxdata)
+{
+	// Set read operation
+	address |= READ_OPERATION;
+
+	// Pull cs line low to enable slave
+	cs_enable();
+
+	// Send address
+	spi1_transmit_blocking(&address, 1); // Start a read operation from this register, and auto increment
+
+	// Read 14 bytes
+	spi1_receive_blocking(rxdata, 14); // store received data in rxdata, 14 bytes - 7 variables, 2 bytes each (x,y,z acceleration, x,y,z angular velocity, temperature)
+
+	// Pull cs line high to disable slave
+	cs_disable();
+
+}
+
 
 void mpu6500_write_blocking(uint8_t address, uint8_t value)
 {
@@ -124,21 +143,21 @@ void mpu6500_init(void)
 }
 
 // Reads and processes the reading of IMU
-void mpu6500_process(MPU6500_IMU_bias *gyro_bias, MPU6500_Data_t *imu_data, uint8_t *data_rec)
+void mpu6500_process(MPU6500_IMU_bias *imu_bias, MPU6500_Data_t *imu_data, uint8_t *data_rec)
 {
 	 // Processes received data from the array data_rec and writes IMU reading to imu_data variable
 
 	 // Reading x component of the acceleration
 	 int16_t ax_raw = (int16_t)((data_rec[1] << 8) | data_rec[2]); // Shifting data bytes to get data (data stored in 2 bytes for each component)
-	 imu_data->a_x = ax_raw * 0.000122070; // This is scaling for +/-4g range as per datasheet*/
+	 imu_data->a_x = (ax_raw - imu_bias->a_x_bias) * 0.000122070; // This is scaling for +/-4g range as per datasheet*/
 
 	 // Reading y component of the acceleration
 	 int16_t ay_raw = (int16_t)((data_rec[3] << 8) | data_rec[4]);
-	 imu_data->a_y = ay_raw * 0.000122070;
+	 imu_data->a_y = (ay_raw - imu_bias->a_y_bias) * 0.000122070;
 
 	 // Reading z component of the acceleration
 	 int16_t az_raw = (int16_t)((data_rec[5] << 8) | data_rec[6]);
-	 imu_data->a_z = az_raw * 0.000122070;
+	 imu_data->a_z = (az_raw - imu_bias->a_z_bias) * 0.000122070;
 
 	 // Reading temperature
 	 int16_t temp_raw = (int16_t)((data_rec[7] << 8) | data_rec[8]);
@@ -146,16 +165,16 @@ void mpu6500_process(MPU6500_IMU_bias *gyro_bias, MPU6500_Data_t *imu_data, uint
 
 	 // Reading x component of the angular velocity
 	 int16_t omegax_raw = (int16_t)((data_rec[9] << 8) | data_rec[10]);
-	 imu_data->omega_x = (omegax_raw - gyro_bias->omega_x_bias) / 65.6;
+	 imu_data->omega_x = (omegax_raw - imu_bias->omega_x_bias) / 65.6;
 	 // This is scaling for +/-500 dps as per datasheet
 
 	 // Reading y component of the angular velocity
 	 int16_t omegay_raw = (int16_t)((data_rec[11] << 8) | data_rec[12]);
-	 imu_data->omega_y = (omegay_raw - gyro_bias->omega_y_bias) / 65.6;
+	 imu_data->omega_y = (omegay_raw - imu_bias->omega_y_bias) / 65.6;
 
 	 // Reading z component of the angular velocity
 	 int16_t omegaz_raw = (int16_t)((data_rec[13] << 8) | data_rec[14]);
-	 imu_data->omega_z = (omegaz_raw - gyro_bias->omega_z_bias) / 65.6;
+	 imu_data->omega_z = (omegaz_raw - imu_bias->omega_z_bias) / 65.6;
 
 	 // Each data measurement is represented with 2 bytes. The measurement is reconstructed by moving MSB byte left and appending LSB on right.
 	 // data_rec[0] is skipped since that byte is filled during slave internal register configuration write. That is a dummy byte. The rest are data bytes
@@ -164,32 +183,38 @@ void mpu6500_process(MPU6500_IMU_bias *gyro_bias, MPU6500_Data_t *imu_data, uint
 
 void mpu6500_calibrate_imu(uint16_t calibration_samples, MPU6500_IMU_bias *imu_bias)
 {
-	int32_t sum_x = 0, sum_y = 0, sum_z = 0;
+	int32_t sum_ax = 0, sum_ay = 0, sum_az = 0, sum_omegax = 0, sum_omegay = 0, sum_omegaz = 0;
 	uint8_t imu_data[14];
 
     for (int i = 0; i < calibration_samples; i++)	// Reading defined number of gyroscope samples, while drone is steady
     {
 
-		mpu6500_read(DATA_START_ADDR,  imu_data, 14); // Reading data to array
+		mpu6500_read_blocking(DATA_START_ADDR,  imu_data); // Reading data to array
 
 		for (volatile int d = 0; d < 1000; d++) {} // Short delay after reading
 
-		int16_t gx = (int16_t)((imu_data[8]  << 8) | imu_data[9]);  // Reading x component of the angular velocity
-		int16_t gy = (int16_t)((imu_data[10] << 8) | imu_data[11]); // Reading y component of the angular velocity
-		int16_t gz = (int16_t)((imu_data[12] << 8) | imu_data[13]); // Reading z component of the angular velocity
-		int16_t gx = (int16_t)((imu_data[8]  << 8) | imu_data[9]);  // Reading x component of the angular velocity
-		int16_t gy = (int16_t)((imu_data[10] << 8) | imu_data[11]); // Reading y component of the angular velocity
-		int16_t gz = (int16_t)((imu_data[12] << 8) | imu_data[13]); // Reading z component of the angular velocity
+		int16_t ax = (int16_t)((imu_data[0]  << 8) | imu_data[1]);  // Reading x component of the angular velocity
+		int16_t ay = (int16_t)((imu_data[2] << 8) | imu_data[3]); // Reading y component of the angular velocity
+		int16_t az = (int16_t)((imu_data[4] << 8) | imu_data[5]); // Reading z component of the angular velocity
+		int16_t omegax = (int16_t)((imu_data[8]  << 8) | imu_data[9]);  // Reading x component of the angular velocity
+		int16_t omegay = (int16_t)((imu_data[10] << 8) | imu_data[11]); // Reading y component of the angular velocity
+		int16_t omegaz = (int16_t)((imu_data[12] << 8) | imu_data[13]); // Reading z component of the angular velocity
 
-		sum_x += gx;	// Calculating sum in each iteration
-		sum_y += gy;
-		sum_z += gz;
+		sum_omegax += omegax;	// Calculating sum in each iteration
+		sum_omegay += omegay;
+		sum_omegaz += omegaz;
+		sum_ax += ax;
+		sum_ay += ay;
+		sum_az += az;
 
     }
 
-    imu_bias->omega_x_bias = sum_x / calibration_samples;	// Divide the sum with samples number to obtain bias
-    imu_bias->omega_y_bias = sum_y / calibration_samples;
-    imu_bias->omega_z_bias = sum_z / calibration_samples;
+    imu_bias->omega_x_bias = sum_omegax / calibration_samples;	// Divide the sum with samples number to obtain bias
+    imu_bias->omega_y_bias = sum_omegay / calibration_samples;
+    imu_bias->omega_z_bias = sum_omegaz / calibration_samples;
+    imu_bias->a_x_bias = sum_ax / calibration_samples;
+    imu_bias->a_y_bias = sum_ay / calibration_samples;
+    imu_bias->a_z_bias = (sum_az / calibration_samples) - 8192;	// For z calibration is done for g, this is g before scaling (in +/-4g range)
 
 }
 

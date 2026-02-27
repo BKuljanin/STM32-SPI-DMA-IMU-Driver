@@ -251,5 +251,21 @@ void spi1_transmit_blocking(uint8_t *data, uint32_t size)
 
 }
 
+void spi1_receive_blocking(uint8_t *data, uint32_t size)
+{	// Pointer to buffer to store received data
+	while(size)// while there is data to be received, size not zero
+	{
+		// Send dummy data
+		SPI1->DR = 0;
+
+		// Waiting for RXNE flag
+		while(!(SPI1->SR & (SR_RXNE))){} // Once set it implies that there is data in receive buffer that we can consume
+
+		// Read data from data register
+		*data++ = (SPI1->DR); // pointer to storage data, increment
+		size--;
+
+	}
+}
 
 
