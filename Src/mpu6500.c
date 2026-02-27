@@ -124,7 +124,7 @@ void mpu6500_init(void)
 }
 
 // Reads and processes the reading of IMU
-void mpu6500_process(MPU6500_Gyro_bias *gyro_bias, MPU6500_Data_t *imu_data, uint8_t *data_rec)
+void mpu6500_process(MPU6500_IMU_bias *gyro_bias, MPU6500_Data_t *imu_data, uint8_t *data_rec)
 {
 	 // Processes received data from the array data_rec and writes IMU reading to imu_data variable
 
@@ -162,18 +162,21 @@ void mpu6500_process(MPU6500_Gyro_bias *gyro_bias, MPU6500_Data_t *imu_data, uin
 }
 
 
-void mpu6500_calibrate_gyro(uint16_t gyro_samples, MPU6500_Gyro_bias *gyro_bias)
+void mpu6500_calibrate_imu(uint16_t calibration_samples, MPU6500_IMU_bias *imu_bias)
 {
 	int32_t sum_x = 0, sum_y = 0, sum_z = 0;
 	uint8_t imu_data[14];
 
-    for (int i = 0; i < gyro_samples; i++)	// Reading defined number of gyroscope samples, while drone is steady
+    for (int i = 0; i < calibration_samples; i++)	// Reading defined number of gyroscope samples, while drone is steady
     {
 
 		mpu6500_read(DATA_START_ADDR,  imu_data, 14); // Reading data to array
 
 		for (volatile int d = 0; d < 1000; d++) {} // Short delay after reading
 
+		int16_t gx = (int16_t)((imu_data[8]  << 8) | imu_data[9]);  // Reading x component of the angular velocity
+		int16_t gy = (int16_t)((imu_data[10] << 8) | imu_data[11]); // Reading y component of the angular velocity
+		int16_t gz = (int16_t)((imu_data[12] << 8) | imu_data[13]); // Reading z component of the angular velocity
 		int16_t gx = (int16_t)((imu_data[8]  << 8) | imu_data[9]);  // Reading x component of the angular velocity
 		int16_t gy = (int16_t)((imu_data[10] << 8) | imu_data[11]); // Reading y component of the angular velocity
 		int16_t gz = (int16_t)((imu_data[12] << 8) | imu_data[13]); // Reading z component of the angular velocity
@@ -184,15 +187,15 @@ void mpu6500_calibrate_gyro(uint16_t gyro_samples, MPU6500_Gyro_bias *gyro_bias)
 
     }
 
-    gyro_bias->omega_x_bias = sum_x / gyro_samples;	// Divide the sum with samples number to obtain bias
-    gyro_bias->omega_y_bias = sum_y / gyro_samples;
-    gyro_bias->omega_z_bias = sum_z / gyro_samples;
+    imu_bias->omega_x_bias = sum_x / calibration_samples;	// Divide the sum with samples number to obtain bias
+    imu_bias->omega_y_bias = sum_y / calibration_samples;
+    imu_bias->omega_z_bias = sum_z / calibration_samples;
 
 }
 
 
 // DMA completed interrupt
-void dma_callback(MPU6500_Data_t *imu_data, MPU6500_Gyro_bias *gyro_bias, uint8_t *data_rec)
+void dma_callback(MPU6500_Data_t *imu_data, MPU6500_IMU_bias *imu_bias, uint8_t *data_rec)
 {
     // 1) Wait until SPI finished shifting out the last bit
     while (SPI1->SR & SR_BSY) {}
@@ -210,7 +213,7 @@ void dma_callback(MPU6500_Data_t *imu_data, MPU6500_Gyro_bias *gyro_bias, uint8_
 	cs_disable();
 
 	// Handles disabling SPI slave and DMA transfer. Takes received data, processes it and writes IMU data to the variable of type MPU6500_Data_t
-	mpu6500_process(gyro_bias, imu_data, data_rec);
+	mpu6500_process(imu_bias, imu_data, data_rec);
 
 }
 

@@ -9,8 +9,8 @@ int16_t x,y,z;
 float xg,yg,zg;
 
 MPU6500_Data_t imu_data;
-MPU6500_Gyro_bias gyro_bias;
-uint16_t gyro_calibrate_samples = 200;
+MPU6500_IMU_bias imu_bias;
+uint16_t imu_calibrate_samples = 200;
 
 volatile uint32_t systick_ms; // Elapsed time in ms
 uint32_t last_imu_call = 0;
@@ -20,7 +20,6 @@ uint8_t data_rec[15];
 
 static volatile uint8_t imu_dma_busy = 0;
 
-volatile uint8_t debug=0;
 
 int main(void)
 {
@@ -29,17 +28,11 @@ int main(void)
 	mpu6500_init();
 	dma2_transfer_completeted_interrupt_enable();
 	pc13_exti_init(); // PC13 for data ready interrupt
-	//mpu6500_calibrate_gyro(gyro_calibrate_samples, &gyro_bias);
+	mpu6500_calibrate_imu(imu_calibrate_samples, &imu_bias);
 
 	while(1)
 		{
-		/*
-			if ((systick_ms - last_imu_call) >= 1) // Schedules IMU reading every 1ms (1kHz)
-				{
-					last_imu_call = systick_ms;
-					mpu6500_sample(DATA_START_ADDR, &gyro_bias, &imu_data); // Read and store in data_rec
-				}
-		*/
+
 		}
 }
 
@@ -59,30 +52,29 @@ void DMA2_Stream2_IRQHandler(void)
 	{
 		// Clear flag
 		DMA2->LIFCR |= HIFCR_CTCIF2;// Reference manual p225
-		debug = 1;
+
 		// Callback function to disable SPI DMA transfer and process the transfered data
-		dma_callback(&imu_data, &gyro_bias, data_rec);
+		dma_callback(&imu_data, &imu_bias, data_rec);
 
 		imu_dma_busy = 0; // Clearing busy flag when data is processed
-		debug = 2;
+
 	}
 }
 
 
 // Interrupt handler for this particular interrupt is EXTI15_10_...
 void EXTI15_10_IRQHandler(void){
-	//debug=5;
+
 	// When interrupt occurs we enter this interrupt request handler function
 	if ((EXTI->PR & LINE13) != 0)// We check if its from line 13
 	{
 		// Clear PR flag
 		EXTI->PR |= LINE13;
-		//debug=3;
+
 		if (!imu_dma_busy)
 		        {
 		            imu_dma_busy = 1;
 		            mpu6500_read(DATA_START_ADDR, data_rec, sizeof(data_rec));
-		            //debug = 4;
 		        }
 	}
 }
