@@ -21,8 +21,12 @@ void dma2_disable(void);
 void dma2_transfer_completeted_interrupt_enable(void);
 void set_dma_transfer_length(uint32_t len);
 void set_dma_source(uint8_t *src_rx, uint8_t *src_tx);
+void spi1_transmit_blocking(uint8_t *data, uint32_t size);
+
 
 #define HISR_TCIF2 (1U<<21)
 #define HIFCR_CTCIF2 (1U<<21)
+
+#define SR_BSY (1U<<7)
 
 #endif /* SPI_H_ */

@@ -30,11 +30,15 @@ typedef struct
 // Gyroscope bias calibration structure
 typedef struct
 {
+    int16_t a_x_bias;
+    int16_t a_y_bias;
+    int16_t a_z_bias;
+
     int16_t omega_x_bias;
     int16_t omega_y_bias;
     int16_t omega_z_bias;
 
-} MPU6500_Gyro_bias;
+} MPU6500_IMU_bias;
 
 
 // The document MPU6500 will be refered

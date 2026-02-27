@@ -25,10 +25,10 @@ volatile uint8_t debug=0;
 int main(void)
 {
 	SysTick_Init();
-	dma2_stream_2_3_init();
+	dma2_stream_2_3_init(); // Initialize DMA
 	mpu6500_init();
 	dma2_transfer_completeted_interrupt_enable();
-	pc13_exti_init();
+	pc13_exti_init(); // PC13 for data ready interrupt
 	//mpu6500_calibrate_gyro(gyro_calibrate_samples, &gyro_bias);
 
 	while(1)
@@ -59,30 +59,30 @@ void DMA2_Stream2_IRQHandler(void)
 	{
 		// Clear flag
 		DMA2->LIFCR |= HIFCR_CTCIF2;// Reference manual p225
-		//debug = 1;
+		debug = 1;
 		// Callback function to disable SPI DMA transfer and process the transfered data
 		dma_callback(&imu_data, &gyro_bias, data_rec);
 
 		imu_dma_busy = 0; // Clearing busy flag when data is processed
-		//debug = 2;
+		debug = 2;
 	}
 }
 
 
 // Interrupt handler for this particular interrupt is EXTI15_10_...
 void EXTI15_10_IRQHandler(void){
-
+	//debug=5;
 	// When interrupt occurs we enter this interrupt request handler function
 	if ((EXTI->PR & LINE13) != 0)// We check if its from line 13
 	{
 		// Clear PR flag
 		EXTI->PR |= LINE13;
-		debug=3;
+		//debug=3;
 		if (!imu_dma_busy)
 		        {
 		            imu_dma_busy = 1;
 		            mpu6500_read(DATA_START_ADDR, data_rec, sizeof(data_rec));
-		            debug = 4;
+		            //debug = 4;
 		        }
 	}
 }

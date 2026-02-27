@@ -5,7 +5,7 @@
 #define GPIOAEN (1U<<0)
 
 #define SR_TXE (1U<<1)
-#define SR_BSY (1U<<7)
+
 #define SR_RXNE (1U<<0)
 
 // DMA related configuration
@@ -78,10 +78,6 @@ void dma2_stream_2_3_init()
 	// Enable direct mode and disable FIFO
 	DMA2_Stream2->FCR = 0; // Fifo control register, reference manual p231. 0 in the register is interrupt disabled, also 0 is direct mode enable
 	DMA2_Stream3->FCR = 0;
-
-	// Enable SPI DMA RX and TX
-	SPI1->CR2 |= SPI_CR2_RXDMAEN;
-	SPI1->CR2 |= SPI_CR2_TXDMAEN;
 
 }
 
@@ -202,6 +198,10 @@ void spi1_config(void)
 	GPIOA->ODR |= (1U<<9); // CS high idle to ensure correct start
 	// NOTE: Without this line the code didn't work. Writing in initialization wasn't  working because the CS line was initially set low.
 	// It must be low only during the SPI transmit/receive
+
+	// Enable SPI DMA RX and TX
+	SPI1->CR2 |= SPI_CR2_RXDMAEN;
+	SPI1->CR2 |= SPI_CR2_TXDMAEN;
 }
 
 
@@ -219,4 +219,37 @@ void cs_disable(void)
 	GPIOA->ODR |= (1U<<9); // Set to 1 to disable it
 
 }
+
+
+void spi1_transmit_blocking(uint8_t *data, uint32_t size)
+{
+	uint32_t i = 0;
+	uint8_t temp;
+
+	// Multiple data items, we need a loop
+	while(i<size)
+	{
+		// Wait until TXE is set, flag from status register. Reference manual p870
+		while(!(SPI1->SR & (SR_TXE))){}
+
+		// Write the data to the data register
+		SPI1->DR = data[i];
+		i++; // Increment the index, this is a pointer to the buffer
+	}
+
+	// Wait until TXE is set
+	while(!(SPI1->SR & (SR_TXE))){} // Reference manual p869
+
+	// Wait for busy flag to reset
+	while((SPI1->SR & (SR_BSY))){} // 0 not busy (we wait while its busy), refrence manual p869
+
+	// Clear OVR flag
+	temp = SPI1->DR; // Reference manual p869, description of overrun error and reset p844
+	temp = SPI1->SR;
+	// OVR occurs if a new SPI frame is received before the previous data was read from SPI_DR (RXNE still set)
+	// The new data is lost, OVR is set, and must be cleared by reading SPI_DR then SPI_SR
+
+}
+
+
 

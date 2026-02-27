@@ -1,4 +1,14 @@
 #include "mpu6500.h"
+#include "spi.h"
+
+static inline void dma2_clear_spi1_flags(void)
+{
+    // Stream2 flags (TCIF2 etc.) are in LIFCR bits around 16..21
+    DMA2->LIFCR = (1U<<16)|(1U<<18)|(1U<<19)|(1U<<20)|(1U<<21); // Stream2 clear all
+
+    // Stream3 flags are in LIFCR bits around 22..27
+    DMA2->LIFCR = (1U<<22)|(1U<<24)|(1U<<25)|(1U<<26)|(1U<<27); // Stream3 clear all
+}
 
 void mpu6500_read(uint8_t address, uint8_t *rxdata, uint16_t len)
 {	/* rxdata contains additional byte at [0] position. That byte is dummy used to store read values during write
@@ -24,6 +34,8 @@ void mpu6500_read(uint8_t address, uint8_t *rxdata, uint16_t len)
 
 	// Disable DMA
 	dma2_disable();
+
+	dma2_clear_spi1_flags(); // test line
 
 	// Set DMA transfer length
 	set_dma_transfer_length(len);	// Setting size to read bytes length +1. That +1 is for write operation that goes before reading
@@ -66,6 +78,27 @@ void mpu6500_write (uint8_t address, uint8_t value)
 }
 
 
+void mpu6500_write_blocking(uint8_t address, uint8_t value)
+{
+
+	 uint8_t reg = address & 0x7F; // 0 on MSB for writing, for MPU6500
+	 uint8_t val = value;
+
+	// Pull cs line low to enable slave
+	cs_enable();
+
+	// Transmit address
+	spi1_transmit_blocking(&reg, 1);
+
+	// Transmit data
+	spi1_transmit_blocking(&val, 1);
+
+	// Pull cs line high to disable slave
+	cs_disable();
+
+}
+
+
 void mpu6500_init(void)
 {
 	// enable SPI gpio
@@ -75,46 +108,54 @@ void mpu6500_init(void)
 	spi1_config();
 
 	// Wake up sensor
-	mpu6500_write(POWER_CTL_R, RESET);
+	mpu6500_write_blocking(POWER_CTL_R, RESET);
 
 	// Set data format of accelerometer to range +-4g
-	mpu6500_write(ACC_DATA_FORMAT_R, ACC_FOUR_G);
+	mpu6500_write_blocking(ACC_DATA_FORMAT_R, ACC_FOUR_G);
 
 	// Set data format of gyroscope to range +/-500dps
-	mpu6500_write(GYRO_DATA_FORMAT_R, GYRO_500_DPS);
+	mpu6500_write_blocking(GYRO_DATA_FORMAT_R, GYRO_500_DPS);
 
 	// Enable interrupt when data ready
-	mpu6500_write(INTERRUPT_EN_R, INTERRUPT_EN);
+	mpu6500_write_blocking(INTERRUPT_EN_R, INTERRUPT_EN);
+
+	mpu6500_write_blocking(0x37, 0x00);   // INT_PIN_CFG test line
 
 }
 
 // Reads and processes the reading of IMU
 void mpu6500_process(MPU6500_Gyro_bias *gyro_bias, MPU6500_Data_t *imu_data, uint8_t *data_rec)
 {
-	// Processes received data from the array data_rec and writes IMU reading to imu_data variable
+	 // Processes received data from the array data_rec and writes IMU reading to imu_data variable
 
 	 // Reading x component of the acceleration
-	 imu_data->a_x = (((int16_t)data_rec[1]<<8) | data_rec[2]) * 0.000122070; // Shifting data bytes to get data (data stored in 2 bytes for each component)
-	 // This is scaling for +/-4g range as per datasheet
+	 int16_t ax_raw = (int16_t)((data_rec[1] << 8) | data_rec[2]); // Shifting data bytes to get data (data stored in 2 bytes for each component)
+	 imu_data->a_x = ax_raw * 0.000122070; // This is scaling for +/-4g range as per datasheet*/
 
 	 // Reading y component of the acceleration
-	 imu_data->a_y = (((int16_t)data_rec[3]<<8) | data_rec[4]) * 0.000122070;
+	 int16_t ay_raw = (int16_t)((data_rec[3] << 8) | data_rec[4]);
+	 imu_data->a_y = ay_raw * 0.000122070;
 
 	 // Reading z component of the acceleration
-	 imu_data->a_z = (((int16_t)data_rec[5]<<8) | data_rec[6]) * 0.000122070;
+	 int16_t az_raw = (int16_t)((data_rec[5] << 8) | data_rec[6]);
+	 imu_data->a_z = az_raw * 0.000122070;
 
 	 // Reading temperature
-	 imu_data->temp = ((((int16_t)data_rec[7]<<8) | data_rec[8]) / 333.87) + 21.0;
+	 int16_t temp_raw = (int16_t)((data_rec[7] << 8) | data_rec[8]);
+	 imu_data->temp = (temp_raw / 333.87) + 21.0;
 
 	 // Reading x component of the angular velocity
-	 imu_data->omega_x = ((((int16_t)data_rec[9]<<8) | data_rec[10]) - gyro_bias->omega_x_bias) / 65.6;
+	 int16_t omegax_raw = (int16_t)((data_rec[9] << 8) | data_rec[10]);
+	 imu_data->omega_x = (omegax_raw - gyro_bias->omega_x_bias) / 65.6;
 	 // This is scaling for +/-500 dps as per datasheet
 
 	 // Reading y component of the angular velocity
-	 imu_data->omega_y = ((((int16_t)data_rec[11]<<8) | data_rec[12]) - gyro_bias->omega_y_bias) / 65.6;
+	 int16_t omegay_raw = (int16_t)((data_rec[11] << 8) | data_rec[12]);
+	 imu_data->omega_y = (omegay_raw - gyro_bias->omega_y_bias) / 65.6;
 
 	 // Reading z component of the angular velocity
-	 imu_data->omega_z = ((((int16_t)data_rec[13]<<8) | data_rec[14]) - gyro_bias->omega_z_bias) / 65.6;
+	 int16_t omegaz_raw = (int16_t)((data_rec[13] << 8) | data_rec[14]);
+	 imu_data->omega_z = (omegaz_raw - gyro_bias->omega_z_bias) / 65.6;
 
 	 // Each data measurement is represented with 2 bytes. The measurement is reconstructed by moving MSB byte left and appending LSB on right.
 	 // data_rec[0] is skipped since that byte is filled during slave internal register configuration write. That is a dummy byte. The rest are data bytes
@@ -153,6 +194,15 @@ void mpu6500_calibrate_gyro(uint16_t gyro_samples, MPU6500_Gyro_bias *gyro_bias)
 // DMA completed interrupt
 void dma_callback(MPU6500_Data_t *imu_data, MPU6500_Gyro_bias *gyro_bias, uint8_t *data_rec)
 {
+    // 1) Wait until SPI finished shifting out the last bit
+    while (SPI1->SR & SR_BSY) {}
+
+    // 2) Clear possible OVR (safe even if not set)
+    volatile uint8_t tmp;
+    tmp = SPI1->DR;
+    tmp = SPI1->SR;
+    (void)tmp;
+
 	// Disable DMA
 	dma2_disable();
 
@@ -163,3 +213,6 @@ void dma_callback(MPU6500_Data_t *imu_data, MPU6500_Gyro_bias *gyro_bias, uint8_
 	mpu6500_process(gyro_bias, imu_data, data_rec);
 
 }
+
+
+
