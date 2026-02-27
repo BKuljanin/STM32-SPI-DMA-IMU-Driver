@@ -22,6 +22,9 @@ void mpu6500_read(uint8_t address, uint8_t *rxdata, uint16_t len)
 	// Pull cs line low to enable slave
 	cs_enable();
 
+	// Disable DMA
+	dma2_disable();
+
 	// Set DMA transfer length
 	set_dma_transfer_length(len);	// Setting size to read bytes length +1. That +1 is for write operation that goes before reading
 
@@ -47,6 +50,9 @@ void mpu6500_write (uint8_t address, uint8_t value)
 
 	// Pull cs line low to enable slave
 	cs_enable();
+
+	// Disable DMA
+	dma2_disable();
 
 	// Set DMA transfer length
 	set_dma_transfer_length(sizeof(data));
