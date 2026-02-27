@@ -222,7 +222,8 @@ void cs_disable(void)
 
 
 void spi1_transmit_blocking(uint8_t *data, uint32_t size)
-{
+{	// NOTE: Will be used only for initialization of IMU, writing in real time will be done via DMA
+
 	uint32_t i = 0;
 	uint8_t temp;
 
@@ -252,7 +253,9 @@ void spi1_transmit_blocking(uint8_t *data, uint32_t size)
 }
 
 void spi1_receive_blocking(uint8_t *data, uint32_t size)
-{	// Pointer to buffer to store received data
+{	// NOTE: Will be used only for calibration of IMU, reading in real time will be done via DMA
+
+	// Pointer to buffer to store received data
 	while(size)// while there is data to be received, size not zero
 	{
 		// Send dummy data

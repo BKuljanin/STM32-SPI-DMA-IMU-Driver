@@ -78,7 +78,8 @@ void mpu6500_write (uint8_t address, uint8_t value)
 }
 
 void mpu6500_read_blocking(uint8_t address, uint8_t *rxdata)
-{
+{	// NOTE: Will be used only for calibration of IMU, reading in real time will be done via DMA
+
 	// Set read operation
 	address |= READ_OPERATION;
 
@@ -98,7 +99,7 @@ void mpu6500_read_blocking(uint8_t address, uint8_t *rxdata)
 
 
 void mpu6500_write_blocking(uint8_t address, uint8_t value)
-{
+{	// NOTE: Will be used only for initialization of IMU, writing in real time will be done via DMA
 
 	 uint8_t reg = address & 0x7F; // 0 on MSB for writing, for MPU6500
 	 uint8_t val = value;
