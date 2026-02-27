@@ -116,7 +116,7 @@ void mpu6500_calibrate_gyro(uint16_t gyro_samples, MPU6500_Gyro_bias *gyro_bias)
     for (int i = 0; i < gyro_samples; i++)	// Reading defined number of gyroscope samples, while drone is steady
     {
 
-		mpu6500_read(DATA_START_ADDR,  imu_data); // Reading data to array
+		mpu6500_read(DATA_START_ADDR,  imu_data, 14); // Reading data to array
 
 		for (volatile int d = 0; d < 1000; d++) {} // Short delay after reading
 
