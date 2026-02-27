@@ -83,8 +83,13 @@ void dma2_stream_2_3_init()
 	SPI1->CR2 |= SPI_CR2_RXDMAEN;
 	SPI1->CR2 |= SPI_CR2_TXDMAEN;
 
+}
+
+void dma2_transfer_completeted_interrupt_enable(void)
+{
 	// Enable DMA interrupt in NVIC. After transfer is completed interrupt occurs
 	NVIC_EnableIRQ(DMA2_Stream2_IRQn); // Transfer completed interrupt only for RX (stream 2)
+	// Called after init to avoid interrupts during init phase
 }
 
 void dma2_enable(void)

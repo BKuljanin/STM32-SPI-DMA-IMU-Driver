@@ -23,9 +23,10 @@ uint8_t data_rec[15];
 int main(void)
 {
 	SysTick_Init();
-	pc13_exti_init();
 	dma2_stream_2_3_init();
 	mpu6500_init();
+	dma2_transfer_completeted_interrupt_enable();
+	pc13_exti_init();
 	//mpu6500_calibrate_gyro(gyro_calibrate_samples, &gyro_bias);
 
 	while(1)
@@ -48,16 +49,6 @@ void SysTick_Handler(void)
 }
 
 
-// DMA completed interrupt
-static void dma_callback(void)
-{
-	// Pull cs line high to disable slave
-	cs_disable();
-
-	// Disable DMA
-	dma2_disable();
-}
-
 // We have to implement DMA interrupt request handler. Only for receive stream
 void DMA2_Stream2_IRQHandler(void)
 {
@@ -67,17 +58,11 @@ void DMA2_Stream2_IRQHandler(void)
 		// Clear flag
 		DMA1->LIFCR |= HIFCR_CTCIF2;// Reference manual p225
 
-		// Callback function
-		dma_callback();
+		// Callback function to disable SPI DMA transfer and process the transfered data
+		dma_callback(imu_data, gyro_bias, data_rec);
 	}
 }
 
-// EXTI interrupt PC13 pin for IMU data ready (INT pin of MCU)
-
-static void exti_callback(void)
-{
-
-}
 
 // Interrupt handler for this particular interrupt is EXTI15_10_...
 void EXTI15_10_IRQHandler(void){
@@ -88,7 +73,7 @@ void EXTI15_10_IRQHandler(void){
 		// Clear PR flag
 		EXTI->PR |= LINE13;
 
-		// Do something, whatever code needs to be executed on interrupt
-		exti_callback();
+		// Call SPI DMA read of MPU6500 slave
+		exti_callback(data_rec);
 	}
 }
