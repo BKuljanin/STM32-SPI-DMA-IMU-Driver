@@ -56,10 +56,10 @@ void DMA2_Stream2_IRQHandler(void)
 	if(DMA2->LISR & HISR_TCIF2) // Reference manual p223 DMA low interrupt status register, bit 21 transfer completed stream 2
 	{
 		// Clear flag
-		DMA1->LIFCR |= HIFCR_CTCIF2;// Reference manual p225
+		DMA2->LIFCR |= HIFCR_CTCIF2;// Reference manual p225
 
 		// Callback function to disable SPI DMA transfer and process the transfered data
-		dma_callback(imu_data, gyro_bias, data_rec);
+		dma_callback(&imu_data, &gyro_bias, data_rec);
 	}
 }
 

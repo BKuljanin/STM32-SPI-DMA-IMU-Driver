@@ -52,8 +52,8 @@ void dma2_stream_2_3_init()
 	DMA2->LIFCR |= (1U<<27);
 
 	// Set the destination buffer (peripheral address register). Destination that the user will pass, reference manual p229
-	DMA2_Stream2->PAR = SPI1->DR; // RX
-	DMA2_Stream3->PAR = SPI1->DR; // TX
+	DMA2_Stream2->PAR = (uint32_t)&SPI1->DR; // RX, setting peripheral address (address must be passed to PAR!)
+	DMA2_Stream3->PAR = (uint32_t)&SPI1->DR; // TX, setting peripheral address (address must be passed to PAR!)
 	// Same peripheral is used by both streams, just different directions. Both streams access SPI1->DR
 
 	// Select stream 2 channel 3 and stream 3 channel 3
@@ -97,8 +97,8 @@ void dma2_enable(void)
 	// Enable DMA2 stream 2 and 3
 	DMA2_Stream2->CR |= DMA_CR_EN; // First enable RX stream because if TX is enabled first SPI can start clocking before enabling RX
 	DMA2_Stream3->CR |= DMA_CR_EN; // DMA stream configuration register p226 reference manual
-	while(DMA2_Stream2->CR & DMA_CR_EN){}
-	while(DMA2_Stream3->CR & DMA_CR_EN){}
+	/*while(DMA2_Stream2->CR & DMA_CR_EN){}
+	while(DMA2_Stream3->CR & DMA_CR_EN){}*/
 }
 
 void dma2_disable(void)
@@ -106,8 +106,8 @@ void dma2_disable(void)
 	// Enable DMA2 stream 2 and 3
 	DMA2_Stream2->CR &= ~DMA_CR_EN; // DMA stream configuration register p226 reference manual
 	DMA2_Stream3->CR &= ~DMA_CR_EN;
-	while(DMA2_Stream2->CR & DMA_CR_EN){}
-	while(DMA2_Stream3->CR & DMA_CR_EN){}
+	/*while(DMA2_Stream2->CR & DMA_CR_EN){}
+	while(DMA2_Stream3->CR & DMA_CR_EN){}*/
 }
 
 void set_dma_transfer_length(uint32_t len)
@@ -118,11 +118,11 @@ void set_dma_transfer_length(uint32_t len)
 
 }
 
-void set_dma_source(uint8_t src_rx, uint8_t src_tx)
+void set_dma_source(uint8_t *src_rx, uint8_t *src_tx)
 {
 // Set the source buffers
-DMA2_Stream2->M0AR = src_rx; // Memory source. Stream peripheral address register. Reference manual p229. Source is memory. Memory 0 AR
-DMA2_Stream3->M0AR = src_tx;
+DMA2_Stream2->M0AR = (uint32_t)src_rx; // Memory source. Stream peripheral address register. Reference manual p229. Source is memory. Memory 0 AR
+DMA2_Stream3->M0AR = (uint32_t)src_tx;
 }
 
 void spi_gpio_init(void)
@@ -204,54 +204,6 @@ void spi1_config(void)
 	GPIOA->ODR |= (1U<<9); // CS high idle to ensure correct start
 	// NOTE: Without this line the code didn't work. Writing in initialization wasn't  working because the CS line was initially set low.
 	// It must be low only during the SPI transmit/receive
-}
-
-void spi1_transmit(uint8_t *data, uint32_t size)
-{
-	uint32_t i = 0;
-	uint8_t temp;
-
-	// Multiple data items, we need a loop
-	while(i<size)
-	{
-		// Wait until TXE is set, flag from status register. Reference manual p870
-		while(!(SPI1->SR & (SR_TXE))){}
-
-		// Write the data to the data register
-		SPI1->DR = data[i];
-		i++; // Increment the index, this is a pointer to the buffer
-	}
-
-	// Wait until TXE is set
-	while(!(SPI1->SR & (SR_TXE))){} // Reference manual p869
-
-	// Wait for busy flag to reset
-	while((SPI1->SR & (SR_BSY))){} // 0 not busy (we wait while its busy), refrence manual p869
-
-	// Clear OVR flag
-	temp = SPI1->DR; // Reference manual p869, description of overrun error and reset p844
-	temp = SPI1->SR;
-	// OVR occurs if a new SPI frame is received before the previous data was read from SPI_DR (RXNE still set)
-	// The new data is lost, OVR is set, and must be cleared by reading SPI_DR then SPI_SR
-
-}
-
-
-void spi1_receive(uint8_t *data, uint32_t size)
-{	// Pointer to buffer to store received data
-	while(size)// while there is data to be received, size not zero
-	{
-		// Send dummy data
-		SPI1->DR = 0;
-
-		// Waiting for RXNE flag
-		while(!(SPI1->SR & (SR_RXNE))){} // Once set it implies that there is data in receive buffer that we can consume
-
-		// Read data from data register
-		*data++ = (SPI1->DR); // pointer to storage data, increment
-		size--;
-
-	}
 }
 
 

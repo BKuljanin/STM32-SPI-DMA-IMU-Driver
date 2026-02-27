@@ -11,7 +11,7 @@ void mpu6500_read(uint8_t address, uint8_t *rxdata)
 
 	txdata[0] = address;
 
-	for (int i = 1; i < sizeof(rxdata)-1; i++) // Generating (size+1)-1 additional dummy bytes, so in total there is the same amount to write and read
+	for (int i = 1; i < 14; i++) // Generating 14 additional dummy bytes, so in total there is the same amount to write and read
 	{
 	    txdata[i] = 0xFF;         // Dummy bytes that are sent during read operation
 	}
@@ -147,7 +147,7 @@ static void exti_callback(uint8_t *data_rec)
 static void dma_callback(MPU6500_Data_t *imu_data, MPU6500_Gyro_bias *gyro_bias, uint8_t *data_rec)
 {
 	// Handles disabling SPI slave and DMA transfer. Takes received data, processes it and writes IMU data to the variable of type MPU6500_Data_t
-	mpu6500_process(gyro_bias, imu_data, data_rec)
+	mpu6500_process(gyro_bias, imu_data, data_rec);
 
 	// Pull CS line high to disable slave
 	cs_disable();

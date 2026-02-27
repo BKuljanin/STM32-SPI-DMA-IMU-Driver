@@ -52,9 +52,10 @@ typedef struct
 #define READ_OPERATION 0x80
 
 void mpu6500_init(void);
-void mpu6500_read(uint8_t address, uint8_t *rxdata);
 void mpu6500_calibrate_gyro(uint16_t gyro_samples, MPU6500_Gyro_bias *gyro_bias);
-void mpu6500_sample(uint8_t address, MPU6500_Gyro_bias *gyro_bias, MPU6500_Data_t *imu_data);
+static void dma_callback(MPU6500_Data_t *imu_data, MPU6500_Gyro_bias *gyro_bias, uint8_t *data_rec);
+static void exti_callback(uint8_t *data_rec);
+
 
 
 #endif /* MPU6500_H_ */
