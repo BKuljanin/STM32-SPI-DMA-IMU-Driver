@@ -50,6 +50,8 @@ This project configures the IMU so that the Data Ready interrupt occurs at ~1 kH
     - disable DMA streams
     - bring CS high to disable slave
     - parse raw data → apply scaling and bias → update MPU6500_Data_t
+ 
+  ## Note: Simple polling version of this driver is available on the branch SPI_IMU_Polling.
 
 ---
 
